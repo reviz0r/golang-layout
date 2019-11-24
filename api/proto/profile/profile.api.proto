@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package github.reviz0r.httpapi.profile;
+
+option go_package = "github.com/reviz0r/http-api/pkg/profile";
+
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/api/annotations.proto";
+import "protoc-gen-swagger/options/annotations.proto";
+import "model.proto";
+
+
+service UserService {
+  rpc Create (CreateRequest) returns (CreateResponse) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "user"
+    };
+
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      summary: "Create new user";
+      description: "";
+    };
+  }
+  rpc ReadAll (ReadAllRequest) returns (ReadAllResponse) {
+    option (google.api.http) = {
+      get: "/v1/users"
+    };
+
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      summary: "Get all users (with paging)";
+      description: "";
+    };
+  }
+  rpc Read (ReadRequest) returns (ReadResponse) {
+    option (google.api.http) = {
+      get: "/v1/users/{id}"
+      response_body: "user"
+    };
+
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      summary: "Get one user by id";
+      description: "";
+    };
+  }
+  rpc Update (UpdateRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/v1/users/{id}"
+      body: "user"
+    };
+
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      summary: "Update user fields by id";
+      description: "";
+    };
+  }
+  rpc Replace (ReplaceRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      patch: "/v1/users/{id}"
+      body: "user"
+    };
+
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      summary: "Update user by id";
+      description: "";
+    };
+  }
+  rpc Delete (DeleteRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/users/{id}"
+    };
+
+    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
+      summary: "Delete user by id";
+      description: "";
+    };
+  }
+}
+
+message CreateRequest {
+  User user = 1;
+}
+message CreateResponse {
+  int64 id = 1;
+}
+
+message ReadAllRequest {
+  int64 limit  = 1;
+  int64 offset = 2;
+  google.protobuf.FieldMask fields = 3;
+}
+message ReadAllResponse {
+  repeated User users = 1;
+}
+
+message ReadRequest {
+  int64 id = 1;
+  google.protobuf.FieldMask fields = 2;
+}
+message ReadResponse {
+  User user = 1;
+}
+
+message UpdateRequest {
+  int64 id   = 1;
+  User  user = 2;
+  google.protobuf.FieldMask fields = 3;
+}
+
+message ReplaceRequest {
+  int64 id   = 1;
+  User  user = 2;
+}
+
+message DeleteRequest {
+  int64 id = 1;
+}
+ 

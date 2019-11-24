@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package github.reviz0r.httpapi.profile;
+
+option go_package = "github.com/reviz0r/http-api/pkg/profile";
+
+
+message User {
+  string name  = 1;
+  string email = 2;
+}
