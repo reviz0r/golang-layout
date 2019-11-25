@@ -6,9 +6,9 @@ import (
 	"net"
 	"net/http"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpcLogrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
+	grpcRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
@@ -21,10 +21,20 @@ var logger = logrus.NewEntry(logrus.New())
 
 func main() {
 	// Start GRPC server
-	go startGRPC(":50051")
+	go func () {
+		err := startGRPC(":50051")
+		if err != nil {
+			log.Fatalf("startGRPC: %v", err)
+		}
+	}()
 
 	// Start GRPC-Gateway server
-	go startHTTP(":8081")
+	go func () {
+		err := startHTTP(":8081")
+		if err != nil {
+			log.Fatalf("startHTTP: %v", err)
+		}
+	}()
 
 	select {}
 }
@@ -36,17 +46,17 @@ func startGRPC(port string) error {
 	}
 
 	grpcServer := grpc.NewServer(
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			grpc_logrus.StreamServerInterceptor(logger),
-			grpc_logrus.PayloadStreamServerInterceptor(logger,
+		grpc.StreamInterceptor(grpcMiddleware.ChainStreamServer(
+			grpcLogrus.StreamServerInterceptor(logger),
+			grpcLogrus.PayloadStreamServerInterceptor(logger,
 				func(ctx context.Context, fullMethodName string, servingObject interface{}) bool { return true }),
-			grpc_recovery.StreamServerInterceptor(),
+			grpcRecovery.StreamServerInterceptor(),
 		)),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpc_logrus.UnaryServerInterceptor(logger),
-			grpc_logrus.PayloadUnaryServerInterceptor(logger,
+		grpc.UnaryInterceptor(grpcMiddleware.ChainUnaryServer(
+			grpcLogrus.UnaryServerInterceptor(logger),
+			grpcLogrus.PayloadUnaryServerInterceptor(logger,
 				func(ctx context.Context, fullMethodName string, servingObject interface{}) bool { return true }),
-			grpc_recovery.UnaryServerInterceptor(),
+			grpcRecovery.UnaryServerInterceptor(),
 		)),
 	)
 	pkg.RegisterUserServiceServer(grpcServer, new(internal.UserService))
