@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
+	"database/sql"
+	"fmt"
 	"net"
 	"net/http"
 
@@ -10,6 +11,7 @@ import (
 	grpcLogrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpcRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
@@ -17,22 +19,40 @@ import (
 	pkg "github.com/reviz0r/http-api/pkg/profile"
 )
 
-var logger = logrus.NewEntry(logrus.New())
+var (
+	logger *logrus.Entry
+	dbname = "golang-layout"
+	db     *sql.DB
+)
+
+func init() {
+	log := logrus.New()
+	//log.SetFormatter(new(logrus.JSONFormatter))
+	logger = logrus.NewEntry(log)
+
+	dbconnString := fmt.Sprintf("user=postgres password=postgres host=localhost port=5432 sslmode=disable database=%s", dbname)
+	dbconn, err := sql.Open("postgres", dbconnString)
+	if err != nil {
+		logger.Panicf("cannot connect to db: %v", err)
+	}
+
+	db = dbconn
+}
 
 func main() {
 	// Start GRPC server
-	go func () {
+	go func() {
 		err := startGRPC(":50051")
 		if err != nil {
-			log.Fatalf("startGRPC: %v", err)
+			logger.Fatalf("startGRPC: %v", err)
 		}
 	}()
 
 	// Start GRPC-Gateway server
-	go func () {
+	go func() {
 		err := startHTTP(":8081")
 		if err != nil {
-			log.Fatalf("startHTTP: %v", err)
+			logger.Fatalf("startHTTP: %v", err)
 		}
 	}()
 
@@ -59,9 +79,9 @@ func startGRPC(port string) error {
 			grpcRecovery.UnaryServerInterceptor(),
 		)),
 	)
-	pkg.RegisterUserServiceServer(grpcServer, new(internal.UserService))
+	pkg.RegisterUserServiceServer(grpcServer, &internal.UserService{DB: db})
 
-	log.Printf("Start grpc server on port %s", port)
+	logger.Printf("Start grpc server on port %s", port)
 	return grpcServer.Serve(lis)
 }
 
@@ -82,6 +102,6 @@ func startHTTP(port string) error {
 		http.ServeFile(w, r, "api/proto/profile/profile.api.swagger.json")
 	})
 
-	log.Printf("Start http server on port %s", port)
+	logger.Printf("Start http server on port %s", port)
 	return http.ListenAndServe(port, mux)
 }

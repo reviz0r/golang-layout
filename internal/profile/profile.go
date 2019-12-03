@@ -2,6 +2,9 @@ package profile
 
 import (
 	"context"
+	"database/sql"
+	"errors"
+	"log"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
@@ -12,34 +15,67 @@ import (
 
 // UserService .
 type UserService struct {
-	pk    int64
-	users []*profile.User
+	*sql.DB
 }
 
 // Create .
 func (s *UserService) Create(ctx context.Context, in *profile.CreateRequest) (*profile.CreateResponse, error) {
-	if in.GetUser().GetName() != "" && in.GetUser().GetEmail() != "" {
-		s.users = append(s.users, in.GetUser())
-	} else {
-		return nil, status.Error(codes.InvalidArgument, "user cannot be nil")
+	var id int64
+
+	err := s.DB.QueryRowContext(ctx, "insert into users (name, email) values ($1, $2) returning id", in.GetUser().GetName(), in.GetUser().GetEmail()).Scan(&id)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "UserService.Create: %w", err.Error())
 	}
 
-	s.pk++
-	return &profile.CreateResponse{Id: s.pk}, nil
+	return &profile.CreateResponse{Id: id}, nil
 }
 
 // ReadAll .
 func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (*profile.ReadAllResponse, error) {
-	return &profile.ReadAllResponse{Users: s.users}, nil
+	log.Println(in.GetFields().GetPaths())
+
+	rows, err := s.DB.QueryContext(ctx, "select name, email from users limit 100")
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %w", err.Error())
+	}
+
+	var users []*profile.User
+
+	for rows.Next() {
+		var user profile.User
+
+		err := rows.Scan(&user.Name, &user.Email)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %w", err.Error())
+		}
+
+		users = append(users, &user)
+	}
+
+	return &profile.ReadAllResponse{Users: users}, nil
 }
 
 // Read .
 func (s *UserService) Read(ctx context.Context, in *profile.ReadRequest) (*profile.ReadResponse, error) {
-	return &profile.ReadResponse{User: s.users[in.GetId()-1]}, nil
+	log.Println(in.GetFields().GetPaths())
+
+	var user profile.User
+
+	err := s.DB.QueryRowContext(ctx, "select name, email from users where id = $1", in.GetId()).Scan(&user.Name, &user.Email)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, status.Error(codes.NotFound, codes.NotFound.String())
+	}
+
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "UserService.Read: %w", err.Error())
+	}
+
+	return &profile.ReadResponse{User: &user}, nil
 }
 
 // Update .
-func (s *UserService) Update(context.Context, *profile.UpdateRequest) (*empty.Empty, error) {
+func (s *UserService) Update(ctx context.Context, in *profile.UpdateRequest) (*empty.Empty, error) {
+	log.Println(in.GetFields().GetPaths())
 	return nil, status.Error(codes.Unimplemented, codes.Unimplemented.String())
 }
 
@@ -49,6 +85,20 @@ func (s *UserService) Replace(context.Context, *profile.ReplaceRequest) (*empty.
 }
 
 // Delete .
-func (s *UserService) Delete(context.Context, *profile.DeleteRequest) (*empty.Empty, error) {
-	return nil, status.Error(codes.Unimplemented, codes.Unimplemented.String())
+func (s *UserService) Delete(ctx context.Context, in *profile.DeleteRequest) (*empty.Empty, error) {
+	res, err := s.DB.ExecContext(ctx, "delete from users where id = $1", in.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "UserService.Delete: %w", err.Error())
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "UserService.Delete: %w", err.Error())
+	}
+
+	if rows != 1 {
+		return nil, status.Error(codes.NotFound, codes.NotFound.String())
+	}
+
+	return new(empty.Empty), nil
 }
