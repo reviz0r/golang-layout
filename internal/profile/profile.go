@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/volatiletech/sqlboiler/boil"
@@ -72,27 +71,38 @@ func (s *UserService) Read(ctx context.Context, in *profile.ReadRequest) (*profi
 
 // Update .
 func (s *UserService) Update(ctx context.Context, in *profile.UpdateRequest) (*empty.Empty, error) {
-	log.Println(in.GetFields().GetPaths())
-	return nil, status.Error(codes.Unimplemented, codes.Unimplemented.String())
-}
+	user, err := models.FindUser(ctx, s.DB, in.GetId(), models.UserColumns.ID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, status.Error(codes.NotFound, codes.NotFound.String())
+	}
 
-// Replace .
-func (s *UserService) Replace(context.Context, *profile.ReplaceRequest) (*empty.Empty, error) {
-	return nil, status.Error(codes.Unimplemented, codes.Unimplemented.String())
+	{
+		user.Name = in.GetUser().GetName()
+		user.Email = in.GetUser().GetEmail()
+	}
+
+	rows, err := user.Update(ctx, s.DB, boil.Whitelist(in.GetFields().GetPaths()...))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "UserService.Update: %w", err.Error())
+	}
+	if rows != 1 {
+		return nil, status.Error(codes.NotFound, codes.NotFound.String())
+	}
+
+	return new(empty.Empty), nil
 }
 
 // Delete .
 func (s *UserService) Delete(ctx context.Context, in *profile.DeleteRequest) (*empty.Empty, error) {
-	res, err := s.DB.ExecContext(ctx, "delete from users where id = $1", in.GetId())
+	user, err := models.FindUser(ctx, s.DB, in.GetId(), models.UserColumns.ID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, status.Error(codes.NotFound, codes.NotFound.String())
+	}
+
+	rows, err := user.Delete(ctx, s.DB)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "UserService.Delete: %w", err.Error())
 	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "UserService.Delete: %w", err.Error())
-	}
-
 	if rows != 1 {
 		return nil, status.Error(codes.NotFound, codes.NotFound.String())
 	}
