@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package github.reviz0r.httpapi.profile;
+package github.reviz0r.layout.profile;
 
-option go_package = "github.com/reviz0r/http-api/pkg/profile";
+option go_package = "github.com/reviz0r/golang-layout/pkg/profile";
 
 
 message User {

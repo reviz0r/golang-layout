@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package github.reviz0r.httpapi.profile;
+package github.reviz0r.layout.profile;
 
-option go_package = "github.com/reviz0r/http-api/pkg/profile";
+option go_package = "github.com/reviz0r/golang-layout/pkg/profile";
 
 
 import "google/protobuf/empty.proto";
@@ -47,23 +47,12 @@ service UserService {
   }
   rpc Update (UpdateRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      put: "/v1/users/{id}"
-      body: "user"
-    };
-
-    option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      summary: "Update user fields by id";
-      description: "";
-    };
-  }
-  rpc Replace (ReplaceRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
       patch: "/v1/users/{id}"
       body: "user"
     };
 
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      summary: "Update user by id";
+      summary: "Update user fields by id";
       description: "";
     };
   }

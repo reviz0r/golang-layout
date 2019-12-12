@@ -25,7 +25,7 @@ clean:
 
 # Rule for compiling protobuf + grpc
 $(TARGET_DIR)%.pb.go : %.proto
-	# $(info Generating proto + grpc from $<)
+	$(info Generating proto + grpc from $<)
 	@protoc \
 		--proto_path=/usr/local/include \
 		--proto_path=$(GATEWAY_PATH) \
