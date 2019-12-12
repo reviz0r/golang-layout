@@ -1,0 +1,9 @@
+[psql]
+  host      = "localhost"
+  port      = 5432
+  sslmode   = "disable"
+  dbname    = "golang-layout"
+  user      = "postgres"
+  pass      = "postgres"
+  schema    = "public"
+  blacklist = ["goose_db_version"]

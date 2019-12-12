@@ -7,8 +7,12 @@ all: clean build
 	@$(CURDIR)/bin/$(PROJECT)
 
 .PHONY: build
-build:
+build: generate
 	@go build -o $(CURDIR)/bin/$(PROJECT) $(CURDIR)/cmd/$(PROJECT)
+
+.PHONY: generate
+generate:
+	@go generate ./...
 
 .PHONY: clean
 clean:

@@ -7,9 +7,12 @@ import (
 	"log"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/volatiletech/sqlboiler/boil"
+	"github.com/volatiletech/sqlboiler/queries/qm"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/reviz0r/http-api/internal/profile/models"
 	"github.com/reviz0r/http-api/pkg/profile"
 )
 
@@ -20,48 +23,37 @@ type UserService struct {
 
 // Create .
 func (s *UserService) Create(ctx context.Context, in *profile.CreateRequest) (*profile.CreateResponse, error) {
-	var id int64
+	user := &models.User{
+		Name:  in.GetUser().GetName(),
+		Email: in.GetUser().GetEmail(),
+	}
 
-	err := s.DB.QueryRowContext(ctx, "insert into users (name, email) values ($1, $2) returning id", in.GetUser().GetName(), in.GetUser().GetEmail()).Scan(&id)
+	err := user.Insert(ctx, s.DB, boil.Infer())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "UserService.Create: %w", err.Error())
 	}
 
-	return &profile.CreateResponse{Id: id}, nil
+	return &profile.CreateResponse{Id: user.ID}, nil
 }
 
 // ReadAll .
 func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (*profile.ReadAllResponse, error) {
-	log.Println(in.GetFields().GetPaths())
-
-	rows, err := s.DB.QueryContext(ctx, "select name, email from users limit 100")
+	users, err := models.Users(qm.Select(in.GetFields().GetPaths()...)).All(ctx, s.DB)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %w", err.Error())
 	}
 
-	var users []*profile.User
-
-	for rows.Next() {
-		var user profile.User
-
-		err := rows.Scan(&user.Name, &user.Email)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %w", err.Error())
-		}
-
-		users = append(users, &user)
+	pbUsers := make([]*profile.User, len(users))
+	for i, user := range users {
+		pbUsers[i] = &profile.User{Name: user.Name, Email: user.Email}
 	}
 
-	return &profile.ReadAllResponse{Users: users}, nil
+	return &profile.ReadAllResponse{Users: pbUsers}, nil
 }
 
 // Read .
 func (s *UserService) Read(ctx context.Context, in *profile.ReadRequest) (*profile.ReadResponse, error) {
-	log.Println(in.GetFields().GetPaths())
-
-	var user profile.User
-
-	err := s.DB.QueryRowContext(ctx, "select name, email from users where id = $1", in.GetId()).Scan(&user.Name, &user.Email)
+	user, err := models.FindUser(ctx, s.DB, in.GetId(), in.GetFields().GetPaths()...)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.NotFound, codes.NotFound.String())
 	}
@@ -70,7 +62,12 @@ func (s *UserService) Read(ctx context.Context, in *profile.ReadRequest) (*profi
 		return nil, status.Errorf(codes.Internal, "UserService.Read: %w", err.Error())
 	}
 
-	return &profile.ReadResponse{User: &user}, nil
+	pbUser := &profile.User{
+		Name:  user.Name,
+		Email: user.Email,
+	}
+
+	return &profile.ReadResponse{User: pbUser}, nil
 }
 
 // Update .
