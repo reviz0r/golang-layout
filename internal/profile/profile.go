@@ -71,6 +71,10 @@ func (s *UserService) Read(ctx context.Context, in *profile.ReadRequest) (*profi
 
 // Update .
 func (s *UserService) Update(ctx context.Context, in *profile.UpdateRequest) (*empty.Empty, error) {
+	if len(in.GetFields().GetPaths()) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "fields must be specified")
+	}
+
 	user, err := models.FindUser(ctx, s.DB, in.GetId(), models.UserColumns.ID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.NotFound, codes.NotFound.String())
