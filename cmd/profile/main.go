@@ -19,15 +19,21 @@ import (
 	pkg "github.com/reviz0r/http-api/pkg/profile"
 )
 
+// TODO: make config
+const (
+	dbname     = "golang-layout"
+	grpcPort   = ":50051"
+	httpPort   = ":8081"
+	logPayload = true
+)
+
 var (
 	logger *logrus.Entry
-	dbname = "golang-layout"
 	db     *sql.DB
 )
 
 func init() {
 	log := logrus.New()
-	//log.SetFormatter(new(logrus.JSONFormatter))
 	logger = logrus.NewEntry(log)
 
 	dbconnString := fmt.Sprintf("user=postgres password=postgres host=localhost port=5432 sslmode=disable database=%s", dbname)
@@ -42,7 +48,7 @@ func init() {
 func main() {
 	// Start GRPC server
 	go func() {
-		err := startGRPC(":50051")
+		err := startGRPC(grpcPort)
 		if err != nil {
 			logger.Fatalf("startGRPC: %v", err)
 		}
@@ -50,7 +56,7 @@ func main() {
 
 	// Start GRPC-Gateway server
 	go func() {
-		err := startHTTP(context.TODO(), ":8081", ":50051", grpc.WithInsecure())
+		err := startHTTP(context.TODO(), httpPort, grpcPort, grpc.WithInsecure())
 		if err != nil {
 			logger.Fatalf("startHTTP: %v", err)
 		}
@@ -69,13 +75,13 @@ func startGRPC(port string) error {
 		grpc.StreamInterceptor(grpcMiddleware.ChainStreamServer(
 			grpcLogrus.StreamServerInterceptor(logger),
 			grpcLogrus.PayloadStreamServerInterceptor(logger,
-				func(ctx context.Context, fullMethodName string, servingObject interface{}) bool { return true }),
+				func(ctx context.Context, fullMethodName string, servingObject interface{}) bool { return logPayload }),
 			grpcRecovery.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpcMiddleware.ChainUnaryServer(
 			grpcLogrus.UnaryServerInterceptor(logger),
 			grpcLogrus.PayloadUnaryServerInterceptor(logger,
-				func(ctx context.Context, fullMethodName string, servingObject interface{}) bool { return true }),
+				func(ctx context.Context, fullMethodName string, servingObject interface{}) bool { return logPayload }),
 			grpcRecovery.UnaryServerInterceptor(),
 		)),
 	)
