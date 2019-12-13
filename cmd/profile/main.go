@@ -50,7 +50,7 @@ func main() {
 
 	// Start GRPC-Gateway server
 	go func() {
-		err := startHTTP(":8081")
+		err := startHTTP(context.TODO(), ":8081", ":50051", grpc.WithInsecure())
 		if err != nil {
 			logger.Fatalf("startHTTP: %v", err)
 		}
@@ -85,22 +85,22 @@ func startGRPC(port string) error {
 	return grpcServer.Serve(lis)
 }
 
-func startHTTP(port string) error {
+func startHTTP(ctx context.Context, port, grpcPort string, opts ...grpc.DialOption) error {
 	protoMux := runtime.NewServeMux()
-
-	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := pkg.RegisterUserServiceHandlerFromEndpoint(
-		context.TODO(), protoMux, "localhost:50051", opts)
-	if err != nil {
-		return err
-	}
 
 	mux := http.NewServeMux()
 	mux.Handle("/", protoMux)
 
-	mux.HandleFunc("/docs/swagger.json", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "api/proto/profile/profile.api.swagger.json")
-	})
+	err := pkg.RegisterUserServiceHandlerFromEndpoint(
+		ctx, protoMux, "localhost"+grpcPort, opts)
+	if err != nil {
+		return err
+	}
+
+	mux.HandleFunc("/docs/profile/swagger.json",
+		func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, "api/proto/profile/profile.api.swagger.json")
+		})
 
 	logger.Printf("Start http server on port %s", port)
 	return http.ListenAndServe(port, mux)
