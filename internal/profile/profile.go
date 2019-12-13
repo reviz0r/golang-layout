@@ -37,7 +37,19 @@ func (s *UserService) Create(ctx context.Context, in *profile.CreateRequest) (*p
 
 // ReadAll .
 func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (*profile.ReadAllResponse, error) {
-	users, err := models.Users(qm.Select(in.GetFields().GetPaths()...)).All(ctx, s.DB)
+	var offset = int(in.GetOffset())
+	var limit int
+	if in.GetLimit() == 0 || in.GetLimit() > 1000 {
+		limit = 100
+	} else {
+		limit = int(in.GetLimit())
+	}
+
+	users, err := models.Users(
+		qm.Select(in.GetFields().GetPaths()...),
+		qm.Limit(limit),
+		qm.Offset(offset),
+	).All(ctx, s.DB)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %w", err.Error())
 	}
