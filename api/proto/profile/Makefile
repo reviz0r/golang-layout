@@ -9,7 +9,7 @@ TARGET_DIR=../../../pkg/$(PROJECT)/
 
 # File lists
 PROTO_GO_IN=$(wildcard *.proto)
-PROTO_GW_IN=$(wildcard *.api.proto)
+PROTO_GW_IN=$(wildcard *_api.proto)
 PROTO_GO_OUT=$(join $(addsuffix $(TARGET_DIR), $(dir $(PROTO_GO_IN))), $(notdir $(PROTO_GO_IN:.proto=.pb.go)))
 PROTO_GW_OUT=$(join $(addsuffix $(TARGET_DIR), $(dir $(PROTO_GW_IN))), $(notdir $(PROTO_GW_IN:.proto=.pb.gw.go)))
 PROTO_SW_OUT=$(notdir $(PROTO_GW_IN:.proto=.swagger.json))
