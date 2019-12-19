@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"net"
 	"net/http"
 
@@ -21,10 +20,8 @@ import (
 
 // TODO: make config
 const (
-	dbname     = "golang-layout"
-	grpcPort   = ":50051"
-	httpPort   = ":8081"
-	logPayload = true
+	grpcPort = ":50051"
+	httpPort = ":8081"
 )
 
 var (
@@ -33,16 +30,8 @@ var (
 )
 
 func init() {
-	log := logrus.New()
-	logger = logrus.NewEntry(log)
-
-	dbconnString := fmt.Sprintf("user=postgres password=postgres host=localhost port=5432 sslmode=disable database=%s", dbname)
-	dbconn, err := sql.Open("postgres", dbconnString)
-	if err != nil {
-		logger.Panicf("cannot connect to db: %v", err)
-	}
-
-	db = dbconn
+	logger = NewLogger()
+	db = NewDatabase()
 }
 
 func main() {
@@ -74,14 +63,12 @@ func startGRPC(port string) error {
 	grpcServer := grpc.NewServer(
 		grpc.StreamInterceptor(grpcMiddleware.ChainStreamServer(
 			grpcLogrus.StreamServerInterceptor(logger),
-			grpcLogrus.PayloadStreamServerInterceptor(logger,
-				func(ctx context.Context, fullMethodName string, servingObject interface{}) bool { return logPayload }),
+			grpcLogrus.PayloadStreamServerInterceptor(logger, LoggingPayloadDecider()),
 			grpcRecovery.StreamServerInterceptor(),
 		)),
 		grpc.UnaryInterceptor(grpcMiddleware.ChainUnaryServer(
 			grpcLogrus.UnaryServerInterceptor(logger),
-			grpcLogrus.PayloadUnaryServerInterceptor(logger,
-				func(ctx context.Context, fullMethodName string, servingObject interface{}) bool { return logPayload }),
+			grpcLogrus.PayloadUnaryServerInterceptor(logger, LoggingPayloadDecider()),
 			grpcRecovery.UnaryServerInterceptor(),
 		)),
 	)
