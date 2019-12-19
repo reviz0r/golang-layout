@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net"
 	"net/http"
+	"sync"
 
 	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpcLogrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
@@ -35,30 +37,27 @@ func init() {
 }
 
 func main() {
+	logger.Debug("app starting")
+
+	mainCtx, mainWg := Grace()
+
 	// Start GRPC server
-	go func() {
-		err := startGRPC(grpcPort)
-		if err != nil {
-			logger.Fatalf("startGRPC: %v", err)
-		}
-	}()
+	mainWg.Add(1)
+	go startGRPC(mainCtx, mainWg, grpcPort)
 
 	// Start GRPC-Gateway server
-	go func() {
-		err := startHTTP(context.TODO(), httpPort, grpcPort, grpc.WithInsecure())
-		if err != nil {
-			logger.Fatalf("startHTTP: %v", err)
-		}
-	}()
+	mainWg.Add(1)
+	go startHTTP(mainCtx, mainWg, httpPort, grpcPort, grpc.WithInsecure())
 
-	select {}
+	logger.Debug("app started")
+
+	mainWg.Wait()
+
+	logger.Debug("app is shutdown")
 }
 
-func startGRPC(port string) error {
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		return err
-	}
+func startGRPC(ctx context.Context, wg *sync.WaitGroup, port string) {
+	defer wg.Done()
 
 	grpcServer := grpc.NewServer(
 		grpc.StreamInterceptor(grpcMiddleware.ChainStreamServer(
@@ -74,27 +73,61 @@ func startGRPC(port string) error {
 	)
 	pkg.RegisterUserServiceServer(grpcServer, &internal.UserService{DB: db})
 
-	logger.Printf("Start grpc server on port %s", port)
-	return grpcServer.Serve(lis)
+	go func() {
+		<-ctx.Done()
+		grpcServer.GracefulStop()
+		logger.Debug("grpc server is shutdown")
+	}()
+
+	logger.Debugf("Start grpc server on port %s", port)
+
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		panic(fmt.Errorf("cannot listen grpc port %s %v", port, err))
+	}
+
+	err = grpcServer.Serve(lis)
+	if err != nil {
+		panic(fmt.Errorf("cannot serve grpc: %v", err))
+	}
 }
 
-func startHTTP(ctx context.Context, port, grpcPort string, opts ...grpc.DialOption) error {
-	protoMux := runtime.NewServeMux()
+func startHTTP(ctx context.Context, wg *sync.WaitGroup, port, grpcPort string, opts ...grpc.DialOption) {
+	defer wg.Done()
 
-	mux := http.NewServeMux()
-	mux.Handle("/", protoMux)
+	protoMux := runtime.NewServeMux()
 
 	err := pkg.RegisterUserServiceHandlerFromEndpoint(
 		ctx, protoMux, "localhost"+grpcPort, opts)
 	if err != nil {
-		return err
+		panic(fmt.Errorf("cannot register user service: %v", err))
 	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/", protoMux)
 
 	mux.HandleFunc("/docs/profile/swagger.json",
 		func(w http.ResponseWriter, r *http.Request) {
 			http.ServeFile(w, r, "api/proto/profile/profile.api.swagger.json")
 		})
 
-	logger.Printf("Start http server on port %s", port)
-	return http.ListenAndServe(port, mux)
+	s := http.Server{Addr: port, Handler: mux}
+
+	go func() {
+		<-ctx.Done()
+		s.Shutdown(ctx)
+		logger.Debug("http server is shutdown")
+	}()
+
+	logger.Debugf("Start http server on port %s", port)
+
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		panic(fmt.Errorf("cannot listen http port %s %v", port, err))
+	}
+
+	err = s.Serve(lis)
+	if err != nil && err != http.ErrServerClosed {
+		panic(fmt.Errorf("cannot serve http: %v", err))
+	}
 }

@@ -13,6 +13,8 @@ const logPayload = true
 func NewLogger() *logrus.Entry {
 	logger := logrus.New()
 
+	logger.SetLevel(logrus.TraceLevel)
+
 	return logrus.NewEntry(logger)
 }
 
