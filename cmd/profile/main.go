@@ -16,8 +16,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
-	internal "github.com/reviz0r/http-api/internal/profile"
-	pkg "github.com/reviz0r/http-api/pkg/profile"
+	internal "github.com/reviz0r/golang-layout/internal/profile"
+	pkg "github.com/reviz0r/golang-layout/pkg/profile"
 )
 
 // TODO: make config

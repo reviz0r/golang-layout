@@ -11,8 +11,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/reviz0r/http-api/internal/profile/models"
-	"github.com/reviz0r/http-api/pkg/profile"
+	"github.com/reviz0r/golang-layout/internal/profile/models"
+	"github.com/reviz0r/golang-layout/pkg/profile"
 )
 
 // UserService .

@@ -1,4 +1,4 @@
-module github.com/reviz0r/http-api
+module github.com/reviz0r/golang-layout
 
 go 1.13
 
