@@ -14,7 +14,11 @@ import (
 	"google.golang.org/grpc"
 
 	internal "github.com/reviz0r/golang-layout/internal/profile"
+	"github.com/reviz0r/golang-layout/pkg/db"
+	"github.com/reviz0r/golang-layout/pkg/grace"
+	"github.com/reviz0r/golang-layout/pkg/log"
 	pkg "github.com/reviz0r/golang-layout/pkg/profile"
+	"github.com/reviz0r/golang-layout/pkg/server"
 )
 
 // TODO: make config
@@ -24,19 +28,19 @@ const (
 )
 
 var (
-	logger *logrus.Entry
-	db     *sql.DB
+	logger   *logrus.Entry
+	database *sql.DB
 )
 
 func init() {
-	logger = NewLogger()
-	db = NewDatabase()
+	logger = log.NewLogger()
+	database = db.NewDatabase("golang-layout")
 }
 
 func main() {
 	logger.Debug("app starting")
 
-	mainCtx, mainWg := Grace()
+	mainCtx, mainWg := grace.Grace()
 
 	// Start GRPC server
 	mainWg.Add(1)
@@ -56,8 +60,8 @@ func main() {
 func startGRPC(ctx context.Context, wg *sync.WaitGroup, port string) {
 	defer wg.Done()
 
-	grpcServer := NewGrpcServer(logger)
-	pkg.RegisterUserServiceServer(grpcServer, &internal.UserService{DB: db})
+	grpcServer := server.NewGrpcServer(logger)
+	pkg.RegisterUserServiceServer(grpcServer, &internal.UserService{DB: database})
 
 	go func() {
 		<-ctx.Done()
