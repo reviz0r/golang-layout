@@ -8,9 +8,6 @@ import (
 	"net/http"
 	"sync"
 
-	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpcLogrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
-	grpcRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -59,18 +56,7 @@ func main() {
 func startGRPC(ctx context.Context, wg *sync.WaitGroup, port string) {
 	defer wg.Done()
 
-	grpcServer := grpc.NewServer(
-		grpc.StreamInterceptor(grpcMiddleware.ChainStreamServer(
-			grpcLogrus.StreamServerInterceptor(logger),
-			grpcLogrus.PayloadStreamServerInterceptor(logger, LoggingPayloadDecider()),
-			grpcRecovery.StreamServerInterceptor(),
-		)),
-		grpc.UnaryInterceptor(grpcMiddleware.ChainUnaryServer(
-			grpcLogrus.UnaryServerInterceptor(logger),
-			grpcLogrus.PayloadUnaryServerInterceptor(logger, LoggingPayloadDecider()),
-			grpcRecovery.UnaryServerInterceptor(),
-		)),
-	)
+	grpcServer := NewGrpcServer(logger)
 	pkg.RegisterUserServiceServer(grpcServer, &internal.UserService{DB: db})
 
 	go func() {
