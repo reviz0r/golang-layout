@@ -27,6 +27,7 @@ var _ = Describe("Profile", func() {
 
 		// Server fake port
 		lis *bufconn.Listener
+		s   *grpc.Server
 
 		// Client fake connection
 		conn   *grpc.ClientConn
@@ -37,7 +38,7 @@ var _ = Describe("Profile", func() {
 		db, mock, _ = sqlmock.New()
 
 		lis = bufconn.Listen(bufSize)
-		s := grpc.NewServer()
+		s = grpc.NewServer()
 		pkg.RegisterUserServiceServer(s, &internal.UserService{DB: db})
 		go func() {
 			if err := s.Serve(lis); err != nil {
@@ -47,6 +48,7 @@ var _ = Describe("Profile", func() {
 	})
 
 	AfterSuite(func() {
+		s.Stop()
 		db.Close()
 	})
 
