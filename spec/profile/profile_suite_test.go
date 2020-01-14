@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"google.golang.org/genproto/protobuf/field_mask"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 
@@ -107,6 +108,65 @@ var _ = Describe("Profile", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
 			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+		})
+	})
+
+	Describe("Read", func() {
+		It("can get user by id", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnRows(rows)
+
+			res, err := client.Read(context.Background(), &pkg.ReadRequest{Id: 1})
+
+			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).NotTo(BeNil())
+			Expect(res.GetUser()).To(Equal(&pkg.User{Name: "user", Email: "user@example.com"}))
+		})
+	})
+
+	Describe("Update", func() {
+		It("can update user by id", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnRows(rows)
+			mock.ExpectExec(`UPDATE "users" SET "name"=\$1,"email"=\$2 WHERE "id"=\$3`).
+				WithArgs("user1", "user1@example.com", 1).
+				WillReturnResult(sqlmock.NewResult(0, 1))
+
+			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
+				Id:     1,
+				User:   &pkg.User{Name: "user1", Email: "user1@example.com"},
+				Fields: &field_mask.FieldMask{Paths: []string{"name", "email"}},
+			})
+
+			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).NotTo(BeNil())
+		})
+	})
+
+	Describe("Delete", func() {
+		It("can delete user by id", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnRows(rows)
+			mock.ExpectExec(`DELETE FROM "users" WHERE "id"=\$1`).
+				WithArgs(1).
+				WillReturnResult(sqlmock.NewResult(0, 1))
+
+			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
+
+			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).NotTo(BeNil())
 		})
 	})
 })
