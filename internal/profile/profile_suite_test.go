@@ -97,7 +97,7 @@ var _ = Describe("Profile", func() {
 			Expect(res.GetId()).To(Equal(int64(1)))
 		})
 
-		It("gives error if cannot create user", func() {
+		It("gives Internal error if cannot create user", func() {
 			mock.ExpectQuery(`INSERT INTO "users" (.+) VALUES (.+) RETURNING "id"`).
 				WithArgs("user", "user@example.com").
 				WillReturnError(errors.New("some error"))
@@ -129,7 +129,7 @@ var _ = Describe("Profile", func() {
 			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
 		})
 
-		It("gives error if cannot get all users", func() {
+		It("gives Internal error if cannot get all users", func() {
 			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 100`).
 				WillReturnError(errors.New("some error"))
 
@@ -199,7 +199,7 @@ var _ = Describe("Profile", func() {
 			Expect(res.GetUser()).To(Equal(&pkg.User{Name: "user", Email: "user@example.com"}))
 		})
 
-		It("gives error if cannot get user", func() {
+		It("gives Internal error if cannot get user", func() {
 			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
 				WithArgs(1).
 				WillReturnError(errors.New("some error"))
