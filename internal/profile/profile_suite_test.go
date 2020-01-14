@@ -79,7 +79,7 @@ var _ = Describe("Profile", func() {
 	})
 
 	Describe("Create", func() {
-		It("can create users", func() {
+		It("can create user", func() {
 			rows := sqlmock.NewRows([]string{"id"}).AddRow(1)
 			mock.ExpectQuery(`INSERT INTO "users" (.+) VALUES (.+) RETURNING "id"`).
 				WithArgs("user", "user@example.com").
