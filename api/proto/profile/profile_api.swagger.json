@@ -192,6 +192,18 @@
           "items": {
             "$ref": "#/definitions/profileUser"
           }
+        },
+        "limit": {
+          "type": "string",
+          "format": "int64"
+        },
+        "offset": {
+          "type": "string",
+          "format": "int64"
+        },
+        "total": {
+          "type": "string",
+          "format": "int64"
         }
       }
     },

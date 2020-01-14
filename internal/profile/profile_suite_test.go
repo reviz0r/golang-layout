@@ -119,7 +119,9 @@ var _ = Describe("Profile", func() {
 		It("can get all users", func() {
 			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
 				AddRow(1, "user", "user@example.com")
+			countRows := sqlmock.NewRows([]string{"count"}).AddRow(1)
 			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 100`).WillReturnRows(rows)
+			mock.ExpectQuery(`SELECT COUNT(.+) FROM "users"`).WillReturnRows(countRows)
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{})
 
@@ -127,6 +129,9 @@ var _ = Describe("Profile", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
 			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+			Expect(res.GetLimit()).To(Equal(int64(100)))
+			Expect(res.GetOffset()).To(Equal(int64(0)))
+			Expect(res.GetTotal()).To(Equal(int64(1)))
 		})
 
 		It("gives Internal error if cannot get all users", func() {
@@ -144,10 +149,29 @@ var _ = Describe("Profile", func() {
 			Expect(grpcStatus.Message()).To(Equal("UserService.ReadAll: %!w(string=models: failed to assign all query results to User slice: bind failed to execute query: some error)"))
 		})
 
+		It("gives Internal error if cannot get users count", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 100`).WillReturnRows(rows)
+			mock.ExpectQuery(`SELECT COUNT(.+) FROM "users"`).WillReturnError(errors.New("some error"))
+
+			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
+			Expect(grpcStatus.Message()).To(Equal("UserService.ReadAll: %!w(string=models: failed to count users rows: some error)"))
+		})
+
 		It("can get all users with limit 10", func() {
 			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
 				AddRow(1, "user", "user@example.com")
+			countRows := sqlmock.NewRows([]string{"count"}).AddRow(1)
 			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 10`).WillReturnRows(rows)
+			mock.ExpectQuery(`SELECT COUNT(.+) FROM "users"`).WillReturnRows(countRows)
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 10})
 
@@ -155,12 +179,17 @@ var _ = Describe("Profile", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
 			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+			Expect(res.GetLimit()).To(Equal(int64(10)))
+			Expect(res.GetOffset()).To(Equal(int64(0)))
+			Expect(res.GetTotal()).To(Equal(int64(1)))
 		})
 
 		It("can get all users with limit 1000", func() {
 			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
 				AddRow(1, "user", "user@example.com")
+			countRows := sqlmock.NewRows([]string{"count"}).AddRow(1)
 			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 1000`).WillReturnRows(rows)
+			mock.ExpectQuery(`SELECT COUNT(.+) FROM "users"`).WillReturnRows(countRows)
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 1000})
 
@@ -168,12 +197,17 @@ var _ = Describe("Profile", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
 			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+			Expect(res.GetLimit()).To(Equal(int64(1000)))
+			Expect(res.GetOffset()).To(Equal(int64(0)))
+			Expect(res.GetTotal()).To(Equal(int64(1)))
 		})
 
-		It("can get all users with limit 10000 (but really 100)", func() {
+		It("can get all users with limit 10000 (but really 1000)", func() {
 			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
 				AddRow(1, "user", "user@example.com")
-			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 100`).WillReturnRows(rows)
+			countRows := sqlmock.NewRows([]string{"count"}).AddRow(1)
+			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 1000`).WillReturnRows(rows)
+			mock.ExpectQuery(`SELECT COUNT(.+) FROM "users"`).WillReturnRows(countRows)
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 10000})
 
@@ -181,6 +215,9 @@ var _ = Describe("Profile", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
 			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+			Expect(res.GetLimit()).To(Equal(int64(1000)))
+			Expect(res.GetOffset()).To(Equal(int64(0)))
+			Expect(res.GetTotal()).To(Equal(int64(1)))
 		})
 	})
 

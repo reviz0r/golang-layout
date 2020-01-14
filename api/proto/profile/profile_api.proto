@@ -81,6 +81,9 @@ message ReadAllRequest {
 }
 message ReadAllResponse {
   repeated User users = 1;
+  int64 limit  = 2;
+  int64 offset = 3;
+  int64 total  = 4;
 }
 
 message ReadRequest {

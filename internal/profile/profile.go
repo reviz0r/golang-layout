@@ -34,19 +34,25 @@ func (s *UserService) Create(ctx context.Context, in *profile.CreateRequest) (*p
 
 // ReadAll .
 func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (*profile.ReadAllResponse, error) {
-	var offset = int(in.GetOffset())
-	var limit int
-	if in.GetLimit() == 0 || in.GetLimit() > 1000 {
+	var offset int64 = in.GetOffset()
+	var limit int64 = in.GetLimit()
+	if in.GetLimit() == 0 {
 		limit = 100
-	} else {
-		limit = int(in.GetLimit())
+	}
+	if in.GetLimit() > 1000 {
+		limit = 1000
 	}
 
 	users, err := models.Users(
 		qm.Select(in.GetFields().GetPaths()...),
-		qm.Limit(limit),
-		qm.Offset(offset),
+		qm.Limit(int(limit)),
+		qm.Offset(int(offset)),
 	).All(ctx, s.DB)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %w", err.Error())
+	}
+
+	total, err := models.Users().Count(ctx, s.DB)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %w", err.Error())
 	}
@@ -56,7 +62,7 @@ func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (
 		pbUsers[i] = userToProto(user)
 	}
 
-	return &profile.ReadAllResponse{Users: pbUsers}, nil
+	return &profile.ReadAllResponse{Users: pbUsers, Limit: limit, Offset: offset, Total: total}, nil
 }
 
 // Read .
