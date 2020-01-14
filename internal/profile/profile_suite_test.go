@@ -78,6 +78,7 @@ var _ = Describe("Profile", func() {
 	})
 
 	AfterEach(func() {
+		Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 		conn.Close()
 	})
 
@@ -91,7 +92,6 @@ var _ = Describe("Profile", func() {
 			res, err := client.Create(context.Background(),
 				&pkg.CreateRequest{User: &pkg.User{Name: "user", Email: "user@example.com"}})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetId()).To(Equal(int64(1)))
@@ -105,7 +105,6 @@ var _ = Describe("Profile", func() {
 			res, err := client.Create(context.Background(),
 				&pkg.CreateRequest{User: &pkg.User{Name: "user", Email: "user@example.com"}})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).To(HaveOccurred())
 			Expect(res).To(BeNil())
 
@@ -124,7 +123,6 @@ var _ = Describe("Profile", func() {
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
@@ -137,7 +135,6 @@ var _ = Describe("Profile", func() {
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).To(HaveOccurred())
 			Expect(res).To(BeNil())
 
@@ -154,7 +151,6 @@ var _ = Describe("Profile", func() {
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 10})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
@@ -168,7 +164,6 @@ var _ = Describe("Profile", func() {
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 1000})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
@@ -182,7 +177,6 @@ var _ = Describe("Profile", func() {
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 10000})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
@@ -200,7 +194,6 @@ var _ = Describe("Profile", func() {
 
 			res, err := client.Read(context.Background(), &pkg.ReadRequest{Id: 1})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUser()).To(Equal(&pkg.User{Name: "user", Email: "user@example.com"}))
@@ -213,7 +206,6 @@ var _ = Describe("Profile", func() {
 
 			res, err := client.Read(context.Background(), &pkg.ReadRequest{Id: 1})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).To(HaveOccurred())
 			Expect(res).To(BeNil())
 
@@ -230,7 +222,6 @@ var _ = Describe("Profile", func() {
 
 			res, err := client.Read(context.Background(), &pkg.ReadRequest{Id: 2})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).To(HaveOccurred())
 			Expect(res).To(BeNil())
 
@@ -258,7 +249,6 @@ var _ = Describe("Profile", func() {
 				Fields: &field_mask.FieldMask{Paths: []string{"name", "email"}},
 			})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 		})
@@ -277,7 +267,6 @@ var _ = Describe("Profile", func() {
 
 			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
 
-			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 		})
