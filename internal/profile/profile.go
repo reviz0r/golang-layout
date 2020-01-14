@@ -78,7 +78,7 @@ func (s *UserService) Read(ctx context.Context, in *profile.ReadRequest) (*profi
 // Update .
 func (s *UserService) Update(ctx context.Context, in *profile.UpdateRequest) (*empty.Empty, error) {
 	if len(in.GetFields().GetPaths()) == 0 {
-		return nil, status.Errorf(codes.InvalidArgument, "fields must be specified")
+		return nil, status.Errorf(codes.InvalidArgument, "UserService.Update: fields must be specified")
 	}
 
 	user, err := models.FindUser(ctx, s.DB, in.GetId(), models.UserColumns.ID)
@@ -98,8 +98,11 @@ func (s *UserService) Update(ctx context.Context, in *profile.UpdateRequest) (*e
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "UserService.Update: %w", err.Error())
 	}
-	if rows != 1 {
+	if rows == 0 {
 		return nil, status.Error(codes.NotFound, codes.NotFound.String())
+	}
+	if rows > 1 {
+		return nil, status.Errorf(codes.Internal, "UserService.Update: expect updating 1 row, but updated %d rows", rows)
 	}
 
 	return new(empty.Empty), nil
@@ -111,13 +114,19 @@ func (s *UserService) Delete(ctx context.Context, in *profile.DeleteRequest) (*e
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.NotFound, codes.NotFound.String())
 	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "UserService.Delete: %w", err.Error())
+	}
 
 	rows, err := user.Delete(ctx, s.DB)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "UserService.Delete: %w", err.Error())
 	}
-	if rows != 1 {
+	if rows == 0 {
 		return nil, status.Error(codes.NotFound, codes.NotFound.String())
+	}
+	if rows > 1 {
+		return nil, status.Errorf(codes.Internal, "UserService.Delete: expect deleting 1 row, but deleted %d rows", rows)
 	}
 
 	return new(empty.Empty), nil

@@ -215,7 +215,7 @@ var _ = Describe("Profile", func() {
 			Expect(grpcStatus.Message()).To(Equal("UserService.Read: %!w(string=models: unable to select from users: bind failed to execute query: some error)"))
 		})
 
-		It("gives NotFound error if user not found", func() {
+		It("gives NotFound error if user does not exist", func() {
 			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
 				WithArgs(2).
 				WillReturnError(sql.ErrNoRows)
@@ -252,6 +252,136 @@ var _ = Describe("Profile", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 		})
+
+		It("gives InvalidArgument error if fields not specified", func() {
+			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
+				Id:   1,
+				User: &pkg.User{Name: "user1", Email: "user1@example.com"},
+			})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.InvalidArgument))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Update: fields must be specified"))
+		})
+
+		It("gives NotFound error if user does not exist", func() {
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnError(sql.ErrNoRows)
+
+			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
+				Id:     1,
+				User:   &pkg.User{Name: "user1", Email: "user1@example.com"},
+				Fields: &field_mask.FieldMask{Paths: []string{"name", "email"}},
+			})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.NotFound))
+			Expect(grpcStatus.Message()).To(Equal(codes.NotFound.String()))
+		})
+
+		It("gives Internal error if cannot find user", func() {
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnError(errors.New("some error"))
+
+			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
+				Id:     1,
+				User:   &pkg.User{Name: "user1", Email: "user1@example.com"},
+				Fields: &field_mask.FieldMask{Paths: []string{"name", "email"}},
+			})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Update: %!w(string=models: unable to select from users: bind failed to execute query: some error)"))
+		})
+
+		It("gives Internal error if cannot update user", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnRows(rows)
+			mock.ExpectExec(`UPDATE "users" SET "name"=\$1,"email"=\$2 WHERE "id"=\$3`).
+				WithArgs("user1", "user1@example.com", 1).
+				WillReturnError(errors.New("some error"))
+
+			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
+				Id:     1,
+				User:   &pkg.User{Name: "user1", Email: "user1@example.com"},
+				Fields: &field_mask.FieldMask{Paths: []string{"name", "email"}},
+			})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Update: %!w(string=models: unable to update users row: some error)"))
+		})
+
+		It("gives NotFound error if updated 0 rows", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnRows(rows)
+			mock.ExpectExec(`UPDATE "users" SET "name"=\$1,"email"=\$2 WHERE "id"=\$3`).
+				WithArgs("user1", "user1@example.com", 1).
+				WillReturnResult(sqlmock.NewResult(0, 0))
+
+			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
+				Id:     1,
+				User:   &pkg.User{Name: "user1", Email: "user1@example.com"},
+				Fields: &field_mask.FieldMask{Paths: []string{"name", "email"}},
+			})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.NotFound))
+			Expect(grpcStatus.Message()).To(Equal(codes.NotFound.String()))
+		})
+
+		It("gives Internal error if updated more than 1 row", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnRows(rows)
+			mock.ExpectExec(`UPDATE "users" SET "name"=\$1,"email"=\$2 WHERE "id"=\$3`).
+				WithArgs("user1", "user1@example.com", 1).
+				WillReturnResult(sqlmock.NewResult(0, 2))
+
+			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
+				Id:     1,
+				User:   &pkg.User{Name: "user1", Email: "user1@example.com"},
+				Fields: &field_mask.FieldMask{Paths: []string{"name", "email"}},
+			})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Update: expect updating 1 row, but updated 2 rows"))
+		})
 	})
 
 	Describe("Delete", func() {
@@ -269,6 +399,101 @@ var _ = Describe("Profile", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
+		})
+
+		It("gives NotFound error if user does not exist", func() {
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnError(sql.ErrNoRows)
+
+			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.NotFound))
+			Expect(grpcStatus.Message()).To(Equal(codes.NotFound.String()))
+		})
+
+		It("gives Internal error if cannot find user", func() {
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnError(errors.New("some error"))
+
+			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Delete: %!w(string=models: unable to select from users: bind failed to execute query: some error)"))
+		})
+
+		It("gives Internal error if cannot delete user", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnRows(rows)
+			mock.ExpectExec(`DELETE FROM "users" WHERE "id"=\$1`).
+				WithArgs(1).
+				WillReturnError(errors.New("some error"))
+
+			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Delete: %!w(string=models: unable to delete from users: some error)"))
+		})
+
+		It("gives NotFound error if updated 0 rows", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnRows(rows)
+			mock.ExpectExec(`DELETE FROM "users" WHERE "id"=\$1`).
+				WithArgs(1).
+				WillReturnResult(sqlmock.NewResult(0, 0))
+
+			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.NotFound))
+			Expect(grpcStatus.Message()).To(Equal(codes.NotFound.String()))
+		})
+
+		It("gives Internal error if updated more than 1 row", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnRows(rows)
+			mock.ExpectExec(`DELETE FROM "users" WHERE "id"=\$1`).
+				WithArgs(1).
+				WillReturnResult(sqlmock.NewResult(0, 2))
+
+			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
+
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Delete: expect deleting 1 row, but deleted 2 rows"))
 		})
 	})
 })
