@@ -22,10 +22,7 @@ type UserService struct {
 
 // Create .
 func (s *UserService) Create(ctx context.Context, in *profile.CreateRequest) (*profile.CreateResponse, error) {
-	user := &models.User{
-		Name:  in.GetUser().GetName(),
-		Email: in.GetUser().GetEmail(),
-	}
+	user := userFromProto(in.GetUser())
 
 	err := user.Insert(ctx, s.DB, boil.Infer())
 	if err != nil {
@@ -56,7 +53,7 @@ func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (
 
 	pbUsers := make([]*profile.User, len(users))
 	for i, user := range users {
-		pbUsers[i] = &profile.User{Name: user.Name, Email: user.Email}
+		pbUsers[i] = userToProto(user)
 	}
 
 	return &profile.ReadAllResponse{Users: pbUsers}, nil
@@ -73,10 +70,7 @@ func (s *UserService) Read(ctx context.Context, in *profile.ReadRequest) (*profi
 		return nil, status.Errorf(codes.Internal, "UserService.Read: %w", err.Error())
 	}
 
-	pbUser := &profile.User{
-		Name:  user.Name,
-		Email: user.Email,
-	}
+	pbUser := userToProto(user)
 
 	return &profile.ReadResponse{User: pbUser}, nil
 }
