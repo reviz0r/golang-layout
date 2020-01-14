@@ -3,6 +3,7 @@ package profile_test
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"log"
 	"net"
 	"testing"
@@ -11,6 +12,8 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"google.golang.org/genproto/protobuf/field_mask"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
 	internal "github.com/reviz0r/golang-layout/internal/profile"
@@ -93,6 +96,24 @@ var _ = Describe("Profile", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetId()).To(Equal(int64(1)))
 		})
+
+		It("gives error if cannot create user", func() {
+			mock.ExpectQuery(`INSERT INTO "users" (.+) VALUES (.+) RETURNING "id"`).
+				WithArgs("user", "user@example.com").
+				WillReturnError(errors.New("some error"))
+
+			res, err := client.Create(context.Background(),
+				&pkg.CreateRequest{User: &pkg.User{Name: "user", Email: "user@example.com"}})
+
+			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Create: %!w(string=models: unable to insert into users: some error)"))
+		})
 	})
 
 	Describe("ReadAll", func() {
@@ -102,6 +123,64 @@ var _ = Describe("Profile", func() {
 			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 100`).WillReturnRows(rows)
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{})
+
+			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).NotTo(BeNil())
+			Expect(res.GetUsers()).To(HaveLen(1))
+			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+		})
+
+		It("gives error if cannot get all users", func() {
+			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 100`).
+				WillReturnError(errors.New("some error"))
+
+			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{})
+
+			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
+			Expect(grpcStatus.Message()).To(Equal("UserService.ReadAll: %!w(string=models: failed to assign all query results to User slice: bind failed to execute query: some error)"))
+		})
+
+		It("can get all users with limit 10", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 10`).WillReturnRows(rows)
+
+			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 10})
+
+			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).NotTo(BeNil())
+			Expect(res.GetUsers()).To(HaveLen(1))
+			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+		})
+
+		It("can get all users with limit 1000", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 1000`).WillReturnRows(rows)
+
+			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 1000})
+
+			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(res).NotTo(BeNil())
+			Expect(res.GetUsers()).To(HaveLen(1))
+			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+		})
+
+		It("can get all users with limit 10000 (but really 100)", func() {
+			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
+				AddRow(1, "user", "user@example.com")
+			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 100`).WillReturnRows(rows)
+
+			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 10000})
 
 			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
 			Expect(err).NotTo(HaveOccurred())
@@ -125,6 +204,40 @@ var _ = Describe("Profile", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUser()).To(Equal(&pkg.User{Name: "user", Email: "user@example.com"}))
+		})
+
+		It("gives error if cannot get user", func() {
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(1).
+				WillReturnError(errors.New("some error"))
+
+			res, err := client.Read(context.Background(), &pkg.ReadRequest{Id: 1})
+
+			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Read: %!w(string=models: unable to select from users: bind failed to execute query: some error)"))
+		})
+
+		It("gives NotFound error if user not found", func() {
+			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
+				WithArgs(2).
+				WillReturnError(sql.ErrNoRows)
+
+			res, err := client.Read(context.Background(), &pkg.ReadRequest{Id: 2})
+
+			Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
+			Expect(err).To(HaveOccurred())
+			Expect(res).To(BeNil())
+
+			grpcStatus, ok := status.FromError(err)
+			Expect(ok).To(BeTrue())
+			Expect(grpcStatus.Code()).To(Equal(codes.NotFound))
+			Expect(grpcStatus.Message()).To(Equal(codes.NotFound.String()))
 		})
 	})
 
