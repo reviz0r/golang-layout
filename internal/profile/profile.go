@@ -85,6 +85,9 @@ func (s *UserService) Update(ctx context.Context, in *profile.UpdateRequest) (*e
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, status.Error(codes.NotFound, codes.NotFound.String())
 	}
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "UserService.Update: %w", err.Error())
+	}
 
 	{
 		user.Name = in.GetUser().GetName()
