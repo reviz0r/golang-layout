@@ -2,10 +2,12 @@ syntax = "proto3";
 
 package github.reviz0r.layout.profile;
 
+import "validator.proto";
+
 option go_package = "github.com/reviz0r/golang-layout/pkg/profile";
 
 
 message User {
-  string name  = 1;
-  string email = 2;
+  string name  = 1 [(validator.field) = {string_not_empty: true}];
+  string email = 2 [(validator.field) = {string_not_empty: true}];
 }

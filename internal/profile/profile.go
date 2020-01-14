@@ -34,8 +34,8 @@ func (s *UserService) Create(ctx context.Context, in *profile.CreateRequest) (*p
 
 // ReadAll .
 func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (*profile.ReadAllResponse, error) {
-	var offset int64 = in.GetOffset()
-	var limit int64 = in.GetLimit()
+	var offset = in.GetOffset()
+	var limit = in.GetLimit()
 	if in.GetLimit() == 0 {
 		limit = 100
 	}
@@ -62,7 +62,7 @@ func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (
 		pbUsers[i] = userToProto(user)
 	}
 
-	return &profile.ReadAllResponse{Users: pbUsers, Limit: limit, Offset: offset, Total: total}, nil
+	return &profile.ReadAllResponse{Users: pbUsers, Limit: limit, Offset: offset, Total: int32(total)}, nil
 }
 
 // Read .

@@ -85,7 +85,8 @@ func startGRPC(ctx context.Context, wg *sync.WaitGroup, port string) {
 func startHTTP(ctx context.Context, wg *sync.WaitGroup, port, grpcPort string, opts ...grpc.DialOption) {
 	defer wg.Done()
 
-	protoMux := runtime.NewServeMux()
+	protoMux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{EmitDefaults: true}))
 
 	err := pkg.RegisterUserServiceHandlerFromEndpoint(
 		ctx, protoMux, "localhost"+grpcPort, opts)
