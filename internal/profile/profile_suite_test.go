@@ -72,8 +72,9 @@ var _ = Describe("Profile", func() {
 		conn, err = grpc.DialContext(context.Background(), "bufnet",
 			grpc.WithDialer(bufDialer), grpc.WithInsecure())
 		if err != nil {
-			panic("Failed to dial bufnet: " + err.Error())
+			log.Fatalf("Failed to dial bufnet: %s", err.Error())
 		}
+
 		client = pkg.NewUserServiceClient(conn)
 	})
 
@@ -129,9 +130,9 @@ var _ = Describe("Profile", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
 			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
-			Expect(res.GetLimit()).To(Equal(int64(100)))
-			Expect(res.GetOffset()).To(Equal(int64(0)))
-			Expect(res.GetTotal()).To(Equal(int64(1)))
+			Expect(res.GetLimit()).To(Equal(int32(100)))
+			Expect(res.GetOffset()).To(Equal(int32(0)))
+			Expect(res.GetTotal()).To(Equal(int32(1)))
 		})
 
 		It("gives Internal error if cannot get all users", func() {
@@ -179,9 +180,9 @@ var _ = Describe("Profile", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
 			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
-			Expect(res.GetLimit()).To(Equal(int64(10)))
-			Expect(res.GetOffset()).To(Equal(int64(0)))
-			Expect(res.GetTotal()).To(Equal(int64(1)))
+			Expect(res.GetLimit()).To(Equal(int32(10)))
+			Expect(res.GetOffset()).To(Equal(int32(0)))
+			Expect(res.GetTotal()).To(Equal(int32(1)))
 		})
 
 		It("can get all users with limit 1000", func() {
@@ -197,9 +198,9 @@ var _ = Describe("Profile", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
 			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
-			Expect(res.GetLimit()).To(Equal(int64(1000)))
-			Expect(res.GetOffset()).To(Equal(int64(0)))
-			Expect(res.GetTotal()).To(Equal(int64(1)))
+			Expect(res.GetLimit()).To(Equal(int32(1000)))
+			Expect(res.GetOffset()).To(Equal(int32(0)))
+			Expect(res.GetTotal()).To(Equal(int32(1)))
 		})
 
 		It("can get all users with limit 10000 (but really 1000)", func() {
@@ -215,9 +216,9 @@ var _ = Describe("Profile", func() {
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
 			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
-			Expect(res.GetLimit()).To(Equal(int64(1000)))
-			Expect(res.GetOffset()).To(Equal(int64(0)))
-			Expect(res.GetTotal()).To(Equal(int64(1)))
+			Expect(res.GetLimit()).To(Equal(int32(1000)))
+			Expect(res.GetOffset()).To(Equal(int32(0)))
+			Expect(res.GetTotal()).To(Equal(int32(1)))
 		})
 	})
 
