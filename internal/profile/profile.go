@@ -87,17 +87,10 @@ func (s *UserService) Update(ctx context.Context, in *profile.UpdateRequest) (*e
 		return nil, status.Errorf(codes.InvalidArgument, "UserService.Update: fields must be specified")
 	}
 
-	user, err := models.FindUser(ctx, s.DB, in.GetId(), models.UserColumns.ID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, status.Error(codes.NotFound, codes.NotFound.String())
-	}
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "UserService.Update: %w", err.Error())
-	}
-
-	{
-		user.Name = in.GetUser().GetName()
-		user.Email = in.GetUser().GetEmail()
+	user := &models.User{
+		ID:    in.GetId(),
+		Name:  in.GetUser().GetName(),
+		Email: in.GetUser().GetEmail(),
 	}
 
 	rows, err := user.Update(ctx, s.DB, boil.Whitelist(in.GetFields().GetPaths()...))
@@ -116,13 +109,7 @@ func (s *UserService) Update(ctx context.Context, in *profile.UpdateRequest) (*e
 
 // Delete .
 func (s *UserService) Delete(ctx context.Context, in *profile.DeleteRequest) (*empty.Empty, error) {
-	user, err := models.FindUser(ctx, s.DB, in.GetId(), models.UserColumns.ID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil, status.Error(codes.NotFound, codes.NotFound.String())
-	}
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "UserService.Delete: %w", err.Error())
-	}
+	user := &models.User{ID: in.GetId()}
 
 	rows, err := user.Delete(ctx, s.DB)
 	if err != nil {
