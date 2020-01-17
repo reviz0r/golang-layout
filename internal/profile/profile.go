@@ -87,11 +87,8 @@ func (s *UserService) Update(ctx context.Context, in *profile.UpdateRequest) (*e
 		return nil, status.Errorf(codes.InvalidArgument, "UserService.Update: fields must be specified")
 	}
 
-	user := &models.User{
-		ID:    in.GetId(),
-		Name:  in.GetUser().GetName(),
-		Email: in.GetUser().GetEmail(),
-	}
+	user := userFromProto(in.GetUser())
+	user.ID = in.GetId()
 
 	rows, err := user.Update(ctx, s.DB, boil.Whitelist(in.GetFields().GetPaths()...))
 	if err != nil {
