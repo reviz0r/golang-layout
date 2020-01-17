@@ -84,11 +84,11 @@ var _ = Describe("Profile", func() {
 	})
 
 	Describe("Create", func() {
+		q := `^INSERT INTO "users" (.+) VALUES (.+) RETURNING "id"$`
+
 		It("can create user", func() {
 			rows := sqlmock.NewRows([]string{"id"}).AddRow(1)
-			mock.ExpectQuery(`INSERT INTO "users" (.+) VALUES (.+) RETURNING "id"`).
-				WithArgs("user", "user@example.com").
-				WillReturnRows(rows)
+			mock.ExpectQuery(q).WithArgs("user", "user@example.com").WillReturnRows(rows)
 
 			res, err := client.Create(context.Background(),
 				&pkg.CreateRequest{User: &pkg.User{Name: "user", Email: "user@example.com"}})
@@ -99,9 +99,7 @@ var _ = Describe("Profile", func() {
 		})
 
 		It("gives Internal error if cannot create user", func() {
-			mock.ExpectQuery(`INSERT INTO "users" (.+) VALUES (.+) RETURNING "id"`).
-				WithArgs("user", "user@example.com").
-				WillReturnError(errors.New("some error"))
+			mock.ExpectQuery(q).WithArgs("user", "user@example.com").WillReturnError(errors.New("some error"))
 
 			res, err := client.Create(context.Background(),
 				&pkg.CreateRequest{User: &pkg.User{Name: "user", Email: "user@example.com"}})
@@ -117,12 +115,14 @@ var _ = Describe("Profile", func() {
 	})
 
 	Describe("ReadAll", func() {
+		qCount := `^SELECT COUNT(.+) FROM "users";$`
+
 		It("can get all users", func() {
 			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
 				AddRow(1, "user", "user@example.com")
 			countRows := sqlmock.NewRows([]string{"count"}).AddRow(1)
-			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 100`).WillReturnRows(rows)
-			mock.ExpectQuery(`SELECT COUNT(.+) FROM "users"`).WillReturnRows(countRows)
+			mock.ExpectQuery(`^SELECT (.+) FROM "users" LIMIT 100;$`).WillReturnRows(rows)
+			mock.ExpectQuery(qCount).WillReturnRows(countRows)
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{})
 
@@ -136,7 +136,7 @@ var _ = Describe("Profile", func() {
 		})
 
 		It("gives Internal error if cannot get all users", func() {
-			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 100`).
+			mock.ExpectQuery(`^SELECT (.+) FROM "users" LIMIT 100;$`).
 				WillReturnError(errors.New("some error"))
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{})
@@ -153,8 +153,8 @@ var _ = Describe("Profile", func() {
 		It("gives Internal error if cannot get users count", func() {
 			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
 				AddRow(1, "user", "user@example.com")
-			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 100`).WillReturnRows(rows)
-			mock.ExpectQuery(`SELECT COUNT(.+) FROM "users"`).WillReturnError(errors.New("some error"))
+			mock.ExpectQuery(`^SELECT (.+) FROM "users" LIMIT 100;$`).WillReturnRows(rows)
+			mock.ExpectQuery(qCount).WillReturnError(errors.New("some error"))
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{})
 
@@ -171,8 +171,8 @@ var _ = Describe("Profile", func() {
 			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
 				AddRow(1, "user", "user@example.com")
 			countRows := sqlmock.NewRows([]string{"count"}).AddRow(1)
-			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 10`).WillReturnRows(rows)
-			mock.ExpectQuery(`SELECT COUNT(.+) FROM "users"`).WillReturnRows(countRows)
+			mock.ExpectQuery(`^SELECT (.+) FROM "users" LIMIT 10;$`).WillReturnRows(rows)
+			mock.ExpectQuery(qCount).WillReturnRows(countRows)
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 10})
 
@@ -189,8 +189,8 @@ var _ = Describe("Profile", func() {
 			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
 				AddRow(1, "user", "user@example.com")
 			countRows := sqlmock.NewRows([]string{"count"}).AddRow(1)
-			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 1000`).WillReturnRows(rows)
-			mock.ExpectQuery(`SELECT COUNT(.+) FROM "users"`).WillReturnRows(countRows)
+			mock.ExpectQuery(`^SELECT (.+) FROM "users" LIMIT 1000;$`).WillReturnRows(rows)
+			mock.ExpectQuery(qCount).WillReturnRows(countRows)
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 1000})
 
@@ -207,8 +207,8 @@ var _ = Describe("Profile", func() {
 			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
 				AddRow(1, "user", "user@example.com")
 			countRows := sqlmock.NewRows([]string{"count"}).AddRow(1)
-			mock.ExpectQuery(`SELECT (.+) FROM "users" LIMIT 1000`).WillReturnRows(rows)
-			mock.ExpectQuery(`SELECT COUNT(.+) FROM "users"`).WillReturnRows(countRows)
+			mock.ExpectQuery(`^SELECT (.+) FROM "users" LIMIT 1000;$`).WillReturnRows(rows)
+			mock.ExpectQuery(qCount).WillReturnRows(countRows)
 
 			res, err := client.ReadAll(context.Background(), &pkg.ReadAllRequest{Limit: 10000})
 
@@ -223,12 +223,12 @@ var _ = Describe("Profile", func() {
 	})
 
 	Describe("Read", func() {
+		q := `^select (.+) from "users" where "id"=\$1$`
+
 		It("can get user by id", func() {
 			rows := sqlmock.NewRows([]string{"id", "name", "email"}).
 				AddRow(1, "user", "user@example.com")
-			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
-				WithArgs(1).
-				WillReturnRows(rows)
+			mock.ExpectQuery(q).WithArgs(1).WillReturnRows(rows)
 
 			res, err := client.Read(context.Background(), &pkg.ReadRequest{Id: 1})
 
@@ -238,9 +238,7 @@ var _ = Describe("Profile", func() {
 		})
 
 		It("gives Internal error if cannot get user", func() {
-			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
-				WithArgs(1).
-				WillReturnError(errors.New("some error"))
+			mock.ExpectQuery(q).WithArgs(1).WillReturnError(errors.New("some error"))
 
 			res, err := client.Read(context.Background(), &pkg.ReadRequest{Id: 1})
 
@@ -254,9 +252,7 @@ var _ = Describe("Profile", func() {
 		})
 
 		It("gives NotFound error if user does not exist", func() {
-			mock.ExpectQuery(`select (.+) from "users" where "id"=\$1`).
-				WithArgs(2).
-				WillReturnError(sql.ErrNoRows)
+			mock.ExpectQuery(q).WithArgs(2).WillReturnError(sql.ErrNoRows)
 
 			res, err := client.Read(context.Background(), &pkg.ReadRequest{Id: 2})
 
@@ -271,10 +267,10 @@ var _ = Describe("Profile", func() {
 	})
 
 	Describe("Update", func() {
+		q := `^UPDATE "users" SET "name"=\$1,"email"=\$2 WHERE "id"=\$3$`
+
 		It("can update user by id", func() {
-			mock.ExpectExec(`UPDATE "users" SET "name"=\$1,"email"=\$2 WHERE "id"=\$3`).
-				WithArgs("user1", "user1@example.com", 1).
-				WillReturnResult(sqlmock.NewResult(0, 1))
+			mock.ExpectExec(q).WithArgs("user1", "user1@example.com", 1).WillReturnResult(sqlmock.NewResult(0, 1))
 
 			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
 				Id:     1,
@@ -302,9 +298,7 @@ var _ = Describe("Profile", func() {
 		})
 
 		It("gives Internal error if cannot update user", func() {
-			mock.ExpectExec(`UPDATE "users" SET "name"=\$1,"email"=\$2 WHERE "id"=\$3`).
-				WithArgs("user1", "user1@example.com", 1).
-				WillReturnError(errors.New("some error"))
+			mock.ExpectExec(q).WithArgs("user1", "user1@example.com", 1).WillReturnError(errors.New("some error"))
 
 			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
 				Id:     1,
@@ -322,9 +316,7 @@ var _ = Describe("Profile", func() {
 		})
 
 		It("gives NotFound error if updated 0 rows", func() {
-			mock.ExpectExec(`UPDATE "users" SET "name"=\$1,"email"=\$2 WHERE "id"=\$3`).
-				WithArgs("user1", "user1@example.com", 1).
-				WillReturnResult(sqlmock.NewResult(0, 0))
+			mock.ExpectExec(q).WithArgs("user1", "user1@example.com", 1).WillReturnResult(sqlmock.NewResult(0, 0))
 
 			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
 				Id:     1,
@@ -342,9 +334,7 @@ var _ = Describe("Profile", func() {
 		})
 
 		It("gives Internal error if updated more than 1 row", func() {
-			mock.ExpectExec(`UPDATE "users" SET "name"=\$1,"email"=\$2 WHERE "id"=\$3`).
-				WithArgs("user1", "user1@example.com", 1).
-				WillReturnResult(sqlmock.NewResult(0, 2))
+			mock.ExpectExec(q).WithArgs("user1", "user1@example.com", 1).WillReturnResult(sqlmock.NewResult(0, 2))
 
 			res, err := client.Update(context.Background(), &pkg.UpdateRequest{
 				Id:     1,
@@ -363,10 +353,10 @@ var _ = Describe("Profile", func() {
 	})
 
 	Describe("Delete", func() {
+		q := `^DELETE FROM "users" WHERE "id"=\$1$`
+
 		It("can delete user by id", func() {
-			mock.ExpectExec(`DELETE FROM "users" WHERE "id"=\$1`).
-				WithArgs(1).
-				WillReturnResult(sqlmock.NewResult(0, 1))
+			mock.ExpectExec(q).WithArgs(1).WillReturnResult(sqlmock.NewResult(0, 1))
 
 			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
 
@@ -375,9 +365,7 @@ var _ = Describe("Profile", func() {
 		})
 
 		It("gives Internal error if cannot delete user", func() {
-			mock.ExpectExec(`DELETE FROM "users" WHERE "id"=\$1`).
-				WithArgs(1).
-				WillReturnError(errors.New("some error"))
+			mock.ExpectExec(q).WithArgs(1).WillReturnError(errors.New("some error"))
 
 			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
 
@@ -391,9 +379,7 @@ var _ = Describe("Profile", func() {
 		})
 
 		It("gives NotFound error if updated 0 rows", func() {
-			mock.ExpectExec(`DELETE FROM "users" WHERE "id"=\$1`).
-				WithArgs(1).
-				WillReturnResult(sqlmock.NewResult(0, 0))
+			mock.ExpectExec(q).WithArgs(1).WillReturnResult(sqlmock.NewResult(0, 0))
 
 			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
 
@@ -407,9 +393,7 @@ var _ = Describe("Profile", func() {
 		})
 
 		It("gives Internal error if updated more than 1 row", func() {
-			mock.ExpectExec(`DELETE FROM "users" WHERE "id"=\$1`).
-				WithArgs(1).
-				WillReturnResult(sqlmock.NewResult(0, 2))
+			mock.ExpectExec(q).WithArgs(1).WillReturnResult(sqlmock.NewResult(0, 2))
 
 			res, err := client.Delete(context.Background(), &pkg.DeleteRequest{Id: 1})
 
