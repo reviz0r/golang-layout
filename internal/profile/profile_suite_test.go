@@ -46,8 +46,10 @@ var _ = Describe("Profile", func() {
 	)
 
 	BeforeSuite(func() {
+		// create mock db
 		db, mock, _ = sqlmock.New()
 
+		// create local grpc server
 		lis = bufconn.Listen(bufSize)
 		s = grpc.NewServer()
 		pkg.RegisterUserServiceServer(s, &internal.UserService{DB: db})
@@ -56,18 +58,11 @@ var _ = Describe("Profile", func() {
 				log.Fatalf("Server exited with error: %v", err)
 			}
 		}()
-	})
-
-	AfterSuite(func() {
-		s.Stop()
-		db.Close()
-	})
-
-	BeforeEach(func() {
 		bufDialer := func(string, time.Duration) (net.Conn, error) {
 			return lis.Dial()
 		}
 
+		// connect to local grpc server
 		var err error
 		conn, err = grpc.DialContext(context.Background(), "bufnet",
 			grpc.WithDialer(bufDialer), grpc.WithInsecure())
@@ -78,9 +73,14 @@ var _ = Describe("Profile", func() {
 		client = pkg.NewUserServiceClient(conn)
 	})
 
+	AfterSuite(func() {
+		conn.Close()
+		s.Stop()
+		db.Close()
+	})
+
 	AfterEach(func() {
 		Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
-		conn.Close()
 	})
 
 	Describe("Create", func() {
