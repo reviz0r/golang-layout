@@ -1,24 +1,32 @@
 package log
 
 import (
-	"context"
-
-	grpc_logging "github.com/grpc-ecosystem/go-grpc-middleware/logging"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/fx"
 )
 
-const logPayload = true
+// Module register logger in DI container
+var Module = fx.Provide(NewLogger)
 
-// NewLogger gives new predefined logger
-func NewLogger() *logrus.Entry {
-	logger := logrus.New()
+// LoggerParams .
+type LoggerParams struct {
+	fx.In
 
-	logger.SetLevel(logrus.TraceLevel)
-
-	return logrus.NewEntry(logger)
+	Level string `name:"log_level" optional:"true"`
 }
 
-// LoggingPayloadDecider decide is need to log payload
-func LoggingPayloadDecider() grpc_logging.ServerPayloadLoggingDecider {
-	return func(ctx context.Context, fullMethodName string, servingObject interface{}) bool { return logPayload }
+// NewLogger gives new predefined logger
+func NewLogger(p LoggerParams) (*logrus.Entry, error) {
+	logger := logrus.New()
+
+	if p.Level != "" {
+		level, err := logrus.ParseLevel(p.Level)
+		if err != nil {
+			return nil, err
+		}
+
+		logger.SetLevel(level)
+	}
+
+	return logrus.NewEntry(logger), nil
 }
