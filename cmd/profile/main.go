@@ -33,6 +33,8 @@ func main() {
 		log.Module,
 		db.Module,
 		server.Module,
+		server.InterceptorsModule,
+		server.GrpcLoggingPayloadModule,
 
 		// logic modules
 		profile_internal.Module,
