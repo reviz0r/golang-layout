@@ -8,6 +8,8 @@ import (
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/volatiletech/sqlboiler/boil"
 	"github.com/volatiletech/sqlboiler/queries/qm"
+	"go.uber.org/fx"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -15,9 +17,17 @@ import (
 	"github.com/reviz0r/golang-layout/pkg/profile"
 )
 
+// Module register user service in DI container
+var Module = fx.Invoke(RegisterUserService)
+
 // UserService .
 type UserService struct {
 	*sql.DB
+}
+
+// RegisterUserService .
+func RegisterUserService(s *grpc.Server, db *sql.DB) {
+	profile.RegisterUserServiceServer(s, &UserService{DB: db})
 }
 
 // Create .
