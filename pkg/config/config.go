@@ -16,6 +16,11 @@ type Config struct {
 
 	GrpcNetwork string `name:"grpc_network"`
 	GrpcAddress string `name:"grpc_addtess"`
+
+	HTTPNetwork string `name:"http_network"`
+	HTTPAddress string `name:"http_addtess"`
+
+	GatewayEndpoint string `name:"gateway_user_service_endpoint"`
 }
 
 func NewConfig() Config {
@@ -29,5 +34,10 @@ func NewConfig() Config {
 
 		GrpcNetwork: "tcp",
 		GrpcAddress: ":50051",
+
+		HTTPNetwork: "tcp",
+		HTTPAddress: ":8081",
+
+		GatewayEndpoint: "localhost:50051",
 	}
 }
