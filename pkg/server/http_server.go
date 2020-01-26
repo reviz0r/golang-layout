@@ -18,7 +18,7 @@ type HTTPServerParams struct {
 	ProtoMux *runtime.ServeMux
 
 	Network string `name:"http_network"`
-	Address string `name:"http_addtess"`
+	Address string `name:"http_address"`
 }
 
 func NewHTTPServer(lc fx.Lifecycle, p HTTPServerParams) {

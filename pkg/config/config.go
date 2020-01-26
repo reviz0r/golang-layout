@@ -15,10 +15,10 @@ type Config struct {
 	LogPayload bool   `name:"grpc_log_payload"`
 
 	GrpcNetwork string `name:"grpc_network"`
-	GrpcAddress string `name:"grpc_addtess"`
+	GrpcAddress string `name:"grpc_address"`
 
 	HTTPNetwork string `name:"http_network"`
-	HTTPAddress string `name:"http_addtess"`
+	HTTPAddress string `name:"http_address"`
 
 	GatewayEndpoint string `name:"gateway_user_service_endpoint"`
 }

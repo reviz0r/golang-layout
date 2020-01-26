@@ -20,7 +20,7 @@ type GrpcServerParams struct {
 	Logger *logrus.Entry
 
 	Network string `name:"grpc_network"`
-	Address string `name:"grpc_addtess"`
+	Address string `name:"grpc_address"`
 
 	ServerOptions []grpc.ServerOption `group:"grpc_server_options"`
 }
