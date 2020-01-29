@@ -20,8 +20,8 @@ service UserService {
     };
 
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      summary: "Create new user";
-      description: "";
+      summary: "Create new user"
+      description: ""
     };
   }
   rpc ReadAll (ReadAllRequest) returns (ReadAllResponse) {
@@ -30,8 +30,8 @@ service UserService {
     };
 
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      summary: "Get all users (with paging)";
-      description: "";
+      summary: "Get all users (with paging)"
+      description: ""
     };
   }
   rpc Read (ReadRequest) returns (ReadResponse) {
@@ -41,8 +41,8 @@ service UserService {
     };
 
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      summary: "Get one user by id";
-      description: "";
+      summary: "Get one user by id"
+      description: ""
     };
   }
   rpc Update (UpdateRequest) returns (google.protobuf.Empty) {
@@ -52,8 +52,8 @@ service UserService {
     };
 
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      summary: "Update user fields by id";
-      description: "";
+      summary: "Update user fields by id"
+      description: ""
     };
   }
   rpc Delete (DeleteRequest) returns (google.protobuf.Empty) {
@@ -62,8 +62,8 @@ service UserService {
     };
 
     option (grpc.gateway.protoc_gen_swagger.options.openapiv2_operation) = {
-      summary: "Delete user by id";
-      description: "";
+      summary: "Delete user by id"
+      description: ""
     };
   }
 }
