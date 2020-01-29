@@ -17,6 +17,10 @@ build:
 generate:
 	@go generate ./...
 
+.PHONY: test
+test:
+	@go test ./internal/$(PROJECT) -count=1 -cover
+
 .PHONY: clean
 clean:
 	@rm -f $(CURDIR)/bin/$(PROJECT)
