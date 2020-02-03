@@ -33,6 +33,7 @@ func RegisterUserService(s *grpc.Server, db *sql.DB) {
 // Create .
 func (s *UserService) Create(ctx context.Context, in *profile.CreateRequest) (*profile.CreateResponse, error) {
 	user := userFromProto(in.GetUser())
+	user.ID = 0
 
 	err := user.Insert(ctx, s.DB, boil.Infer())
 	if err != nil {

@@ -11,6 +11,7 @@ func userFromProto(in *profile.User) *models.User {
 	}
 
 	return &models.User{
+		ID:    in.GetId(),
 		Name:  in.GetName(),
 		Email: in.GetEmail(),
 	}
@@ -22,6 +23,7 @@ func userToProto(in *models.User) *profile.User {
 	}
 
 	return &profile.User{
+		Id:    in.ID,
 		Name:  in.Name,
 		Email: in.Email,
 	}
