@@ -36,7 +36,7 @@ func (s *UserService) Create(ctx context.Context, in *profile.CreateRequest) (*p
 
 	err := user.Insert(ctx, s.DB, boil.Infer())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "UserService.Create: %w", err.Error())
+		return nil, status.Errorf(codes.Internal, "UserService.Create: %s", err.Error())
 	}
 
 	return &profile.CreateResponse{Id: user.ID}, nil
@@ -59,12 +59,12 @@ func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (
 		qm.Offset(int(offset)),
 	).All(ctx, s.DB)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %w", err.Error())
+		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %s", err.Error())
 	}
 
 	total, err := models.Users().Count(ctx, s.DB)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %w", err.Error())
+		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %s", err.Error())
 	}
 
 	pbUsers := make([]*profile.User, len(users))
@@ -83,7 +83,7 @@ func (s *UserService) Read(ctx context.Context, in *profile.ReadRequest) (*profi
 	}
 
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "UserService.Read: %w", err.Error())
+		return nil, status.Errorf(codes.Internal, "UserService.Read: %s", err.Error())
 	}
 
 	pbUser := userToProto(user)
@@ -102,7 +102,7 @@ func (s *UserService) Update(ctx context.Context, in *profile.UpdateRequest) (*e
 
 	rows, err := user.Update(ctx, s.DB, boil.Whitelist(in.GetFields().GetPaths()...))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "UserService.Update: %w", err.Error())
+		return nil, status.Errorf(codes.Internal, "UserService.Update: %s", err.Error())
 	}
 	if rows == 0 {
 		return nil, status.Error(codes.NotFound, codes.NotFound.String())
@@ -120,7 +120,7 @@ func (s *UserService) Delete(ctx context.Context, in *profile.DeleteRequest) (*e
 
 	rows, err := user.Delete(ctx, s.DB)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "UserService.Delete: %w", err.Error())
+		return nil, status.Errorf(codes.Internal, "UserService.Delete: %s", err.Error())
 	}
 	if rows == 0 {
 		return nil, status.Error(codes.NotFound, codes.NotFound.String())

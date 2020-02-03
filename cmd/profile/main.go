@@ -9,8 +9,8 @@ import (
 	"github.com/reviz0r/golang-layout/pkg/server"
 	"github.com/reviz0r/golang-layout/pkg/server/gateway"
 
-	profile_internal "github.com/reviz0r/golang-layout/internal/profile"
-	profile_pkg "github.com/reviz0r/golang-layout/pkg/profile"
+	profileInternal "github.com/reviz0r/golang-layout/internal/profile"
+	profilePkg "github.com/reviz0r/golang-layout/pkg/profile"
 )
 
 func main() {
@@ -22,13 +22,13 @@ func main() {
 		server.InterceptorsModule,
 		server.GrpcLoggingPayloadModule,
 
-		profile_pkg.GatewayModule,
-		profile_pkg.GatewayInsecureDialModule,
+		profilePkg.GatewayModule,
+		profilePkg.GatewayInsecureDialModule,
 		gateway.MuxModule,
 		server.HTTPModule,
 
 		// logic modules
-		profile_internal.Module,
+		profileInternal.Module,
 	)
 
 	app.Run()

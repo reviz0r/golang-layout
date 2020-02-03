@@ -7,7 +7,6 @@ import (
 	"log"
 	"net"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"google.golang.org/genproto/protobuf/field_mask"
@@ -55,17 +54,17 @@ var _ = Describe("Profile", func() {
 		pkg.RegisterUserServiceServer(s, &internal.UserService{DB: db})
 		go func() {
 			if err := s.Serve(lis); err != nil {
-				log.Fatalf("Server exited with error: %v", err)
+				log.Fatalf("Server exited with error: %s", err.Error())
 			}
 		}()
-		bufDialer := func(string, time.Duration) (net.Conn, error) {
+		bufDialer := func(context.Context, string) (net.Conn, error) {
 			return lis.Dial()
 		}
 
 		// connect to local grpc server
 		var err error
 		conn, err = grpc.DialContext(context.Background(), "bufnet",
-			grpc.WithDialer(bufDialer), grpc.WithInsecure())
+			grpc.WithContextDialer(bufDialer), grpc.WithInsecure())
 		if err != nil {
 			log.Fatalf("Failed to dial bufnet: %s", err.Error())
 		}
@@ -74,9 +73,9 @@ var _ = Describe("Profile", func() {
 	})
 
 	AfterSuite(func() {
-		conn.Close()
+		Expect(conn.Close()).NotTo(HaveOccurred())
 		s.Stop()
-		db.Close()
+		Expect(db.Close()).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
