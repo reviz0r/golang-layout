@@ -109,7 +109,7 @@ var _ = Describe("Profile", func() {
 			grpcStatus, ok := status.FromError(err)
 			Expect(ok).To(BeTrue())
 			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
-			Expect(grpcStatus.Message()).To(Equal("UserService.Create: %!w(string=models: unable to insert into users: some error)"))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Create: models: unable to insert into users: some error"))
 		})
 	})
 
@@ -128,7 +128,7 @@ var _ = Describe("Profile", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
-			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Id: 1, Name: "user", Email: "user@example.com"}}))
 			Expect(res.GetLimit()).To(Equal(int32(100)))
 			Expect(res.GetOffset()).To(Equal(int32(0)))
 			Expect(res.GetTotal()).To(Equal(int32(1)))
@@ -146,7 +146,7 @@ var _ = Describe("Profile", func() {
 			grpcStatus, ok := status.FromError(err)
 			Expect(ok).To(BeTrue())
 			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
-			Expect(grpcStatus.Message()).To(Equal("UserService.ReadAll: %!w(string=models: failed to assign all query results to User slice: bind failed to execute query: some error)"))
+			Expect(grpcStatus.Message()).To(Equal("UserService.ReadAll: models: failed to assign all query results to User slice: bind failed to execute query: some error"))
 		})
 
 		It("gives Internal error if cannot get users count", func() {
@@ -163,7 +163,7 @@ var _ = Describe("Profile", func() {
 			grpcStatus, ok := status.FromError(err)
 			Expect(ok).To(BeTrue())
 			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
-			Expect(grpcStatus.Message()).To(Equal("UserService.ReadAll: %!w(string=models: failed to count users rows: some error)"))
+			Expect(grpcStatus.Message()).To(Equal("UserService.ReadAll: models: failed to count users rows: some error"))
 		})
 
 		It("can get all users with limit 10", func() {
@@ -178,7 +178,7 @@ var _ = Describe("Profile", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
-			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Id: 1, Name: "user", Email: "user@example.com"}}))
 			Expect(res.GetLimit()).To(Equal(int32(10)))
 			Expect(res.GetOffset()).To(Equal(int32(0)))
 			Expect(res.GetTotal()).To(Equal(int32(1)))
@@ -196,7 +196,7 @@ var _ = Describe("Profile", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
-			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Id: 1, Name: "user", Email: "user@example.com"}}))
 			Expect(res.GetLimit()).To(Equal(int32(1000)))
 			Expect(res.GetOffset()).To(Equal(int32(0)))
 			Expect(res.GetTotal()).To(Equal(int32(1)))
@@ -214,7 +214,7 @@ var _ = Describe("Profile", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
 			Expect(res.GetUsers()).To(HaveLen(1))
-			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Name: "user", Email: "user@example.com"}}))
+			Expect(res.GetUsers()).To(Equal([]*pkg.User{{Id: 1, Name: "user", Email: "user@example.com"}}))
 			Expect(res.GetLimit()).To(Equal(int32(1000)))
 			Expect(res.GetOffset()).To(Equal(int32(0)))
 			Expect(res.GetTotal()).To(Equal(int32(1)))
@@ -233,7 +233,7 @@ var _ = Describe("Profile", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(res).NotTo(BeNil())
-			Expect(res.GetUser()).To(Equal(&pkg.User{Name: "user", Email: "user@example.com"}))
+			Expect(res.GetUser()).To(Equal(&pkg.User{Id: 1, Name: "user", Email: "user@example.com"}))
 		})
 
 		It("gives Internal error if cannot get user", func() {
@@ -247,7 +247,7 @@ var _ = Describe("Profile", func() {
 			grpcStatus, ok := status.FromError(err)
 			Expect(ok).To(BeTrue())
 			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
-			Expect(grpcStatus.Message()).To(Equal("UserService.Read: %!w(string=models: unable to select from users: bind failed to execute query: some error)"))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Read: models: unable to select from users: bind failed to execute query: some error"))
 		})
 
 		It("gives NotFound error if user does not exist", func() {
@@ -311,7 +311,7 @@ var _ = Describe("Profile", func() {
 			grpcStatus, ok := status.FromError(err)
 			Expect(ok).To(BeTrue())
 			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
-			Expect(grpcStatus.Message()).To(Equal("UserService.Update: %!w(string=models: unable to update users row: some error)"))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Update: models: unable to update users row: some error"))
 		})
 
 		It("gives NotFound error if updated 0 rows", func() {
@@ -374,7 +374,7 @@ var _ = Describe("Profile", func() {
 			grpcStatus, ok := status.FromError(err)
 			Expect(ok).To(BeTrue())
 			Expect(grpcStatus.Code()).To(Equal(codes.Internal))
-			Expect(grpcStatus.Message()).To(Equal("UserService.Delete: %!w(string=models: unable to delete from users: some error)"))
+			Expect(grpcStatus.Message()).To(Equal("UserService.Delete: models: unable to delete from users: some error"))
 		})
 
 		It("gives NotFound error if updated 0 rows", func() {
