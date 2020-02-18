@@ -4,18 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
-	"net"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"go.uber.org/fx"
 	"google.golang.org/genproto/protobuf/field_mask"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/grpc/test/bufconn"
 
 	internal "github.com/reviz0r/golang-layout/internal/profile"
+	"github.com/reviz0r/golang-layout/pkg/mockdb"
+	"github.com/reviz0r/golang-layout/pkg/mockserver"
 	pkg "github.com/reviz0r/golang-layout/pkg/profile"
 
 	. "github.com/onsi/ginkgo"
@@ -28,55 +28,30 @@ func TestProfile(t *testing.T) {
 }
 
 var _ = Describe("Profile", func() {
-	const bufSize = 1024 * 1024
-
 	var (
 		// Mock DB
 		db   *sql.DB
 		mock sqlmock.Sqlmock
-
-		// Server fake port
-		lis *bufconn.Listener
-		s   *grpc.Server
 
 		// Client fake connection
 		conn   *grpc.ClientConn
 		client pkg.UserServiceClient
 	)
 
-	BeforeSuite(func() {
-		// create mock db
-		db, mock, _ = sqlmock.New()
+	app := fx.New(
+		fx.NopLogger,
 
-		// create local grpc server
-		lis = bufconn.Listen(bufSize)
-		s = grpc.NewServer()
-		pkg.RegisterUserServiceServer(s, &internal.UserService{DB: db})
-		go func() {
-			if err := s.Serve(lis); err != nil {
-				log.Fatalf("Server exited with error: %s", err.Error())
-			}
-		}()
-		bufDialer := func(context.Context, string) (net.Conn, error) {
-			return lis.Dial()
-		}
+		mockdb.Module,
+		mockserver.Module,
+		internal.Module,
 
-		// connect to local grpc server
-		var err error
-		conn, err = grpc.DialContext(context.Background(), "bufnet",
-			grpc.WithContextDialer(bufDialer), grpc.WithInsecure())
-		if err != nil {
-			log.Fatalf("Failed to dial bufnet: %s", err.Error())
-		}
+		fx.Populate(&db),
+		fx.Populate(&mock),
+		fx.Populate(&conn),
+	)
 
-		client = pkg.NewUserServiceClient(conn)
-	})
-
-	AfterSuite(func() {
-		Expect(conn.Close()).NotTo(HaveOccurred())
-		s.Stop()
-		Expect(db.Close()).NotTo(HaveOccurred())
-	})
+	go app.Run()
+	client = pkg.NewUserServiceClient(conn)
 
 	AfterEach(func() {
 		Expect(mock.ExpectationsWereMet()).NotTo(HaveOccurred())
