@@ -1,12 +1,17 @@
 package gateway
 
 import (
+	"net/http"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"go.uber.org/fx"
 )
 
-var MuxModule = fx.Provide(runtime.NewServeMux, NewServeMuxMarshallerOption)
+var MuxModule = fx.Options(
+	fx.Provide(runtime.NewServeMux, NewServeMuxMarshallerOption),
+	fx.Invoke(RegisterProtoMux),
+)
 
 type ServeMuxMarshallerParams struct {
 	fx.In
@@ -28,4 +33,8 @@ func NewServeMuxMarshallerOption(p ServeMuxMarshallerParams) runtime.ServeMuxOpt
 	}
 
 	return runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaller)
+}
+
+func RegisterProtoMux(mux *http.ServeMux, gatewayMux *runtime.ServeMux) {
+	mux.Handle("/", gatewayMux)
 }

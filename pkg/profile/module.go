@@ -2,6 +2,7 @@ package profile
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"go.uber.org/fx"
@@ -32,4 +33,13 @@ type DialInsecureResult struct {
 
 func DialInsecure() DialInsecureResult {
 	return DialInsecureResult{Op: grpc.WithInsecure()}
+}
+
+var SwaggerModule = fx.Invoke(RegisterProfileSwagger)
+
+func RegisterProfileSwagger(mux *http.ServeMux) {
+	mux.HandleFunc("/docs/profile/swagger.json",
+		func(w http.ResponseWriter, r *http.Request) {
+			http.ServeFile(w, r, "api/proto/profile/profile.api.swagger.json")
+		})
 }

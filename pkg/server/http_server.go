@@ -6,29 +6,20 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"go.uber.org/fx"
 )
 
-var HTTPModule = fx.Invoke(NewHTTPServer)
+var HTTPModule = fx.Provide(NewServeMux)
 
-type HTTPServerParams struct {
+type ServeMuxParams struct {
 	fx.In
-
-	ProtoMux *runtime.ServeMux
 
 	Network string `name:"http_network"`
 	Address string `name:"http_address"`
 }
 
-func NewHTTPServer(lc fx.Lifecycle, p HTTPServerParams) {
+func NewServeMux(lc fx.Lifecycle, p ServeMuxParams) *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.Handle("/", p.ProtoMux)
-
-	mux.HandleFunc("/docs/profile/swagger.json",
-		func(w http.ResponseWriter, r *http.Request) {
-			http.ServeFile(w, r, "api/proto/profile/profile.api.swagger.json")
-		})
 
 	s := http.Server{Addr: p.Address, Handler: mux}
 
@@ -40,9 +31,6 @@ func NewHTTPServer(lc fx.Lifecycle, p HTTPServerParams) {
 			}
 
 			go s.Serve(lis)
-			// if err != nil && err != http.ErrServerClosed {
-			// 	return fmt.Errorf("cannot serve http: %v", err)
-			// }
 
 			return nil
 		},
@@ -50,4 +38,6 @@ func NewHTTPServer(lc fx.Lifecycle, p HTTPServerParams) {
 			return s.Shutdown(ctx)
 		},
 	})
+
+	return mux
 }

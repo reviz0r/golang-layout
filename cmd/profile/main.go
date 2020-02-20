@@ -15,6 +15,8 @@ import (
 
 func main() {
 	app := fx.New(
+		fx.NopLogger,
+
 		config.Module,
 		log.Module,
 		db.Module,
@@ -29,6 +31,7 @@ func main() {
 
 		// logic modules
 		profileInternal.Module,
+		profilePkg.SwaggerModule,
 	)
 
 	app.Run()
