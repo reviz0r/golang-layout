@@ -7,7 +7,6 @@ import (
 	"github.com/reviz0r/golang-layout/pkg/db"
 	"github.com/reviz0r/golang-layout/pkg/log"
 	"github.com/reviz0r/golang-layout/pkg/server"
-	"github.com/reviz0r/golang-layout/pkg/server/gateway"
 
 	profileInternal "github.com/reviz0r/golang-layout/internal/profile"
 	profilePkg "github.com/reviz0r/golang-layout/pkg/profile"
@@ -20,17 +19,19 @@ func main() {
 		config.Module,
 		log.Module,
 		db.Module,
+
+		// grpc modules
 		server.Module,
 		server.InterceptorsModule,
 		server.GrpcLoggingPayloadModule,
 
-		profilePkg.GatewayModule,
-		profilePkg.GatewayInsecureDialModule,
-		gateway.MuxModule,
+		// gateway modules
+		server.GatewayMuxModule,
 		server.HTTPModule,
 
 		// logic modules
 		profileInternal.Module,
+		profilePkg.GatewayModule,
 		profilePkg.SwaggerModule,
 	)
 

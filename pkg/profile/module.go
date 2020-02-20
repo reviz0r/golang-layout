@@ -15,24 +15,11 @@ type GatewayParams struct {
 	fx.In
 
 	Mux      *runtime.ServeMux
-	Endpoint string            `name:"gateway_user_service_endpoint"`
-	Opts     []grpc.DialOption `group:"gateway_user_service_dial_options"`
+	Endpoint string `name:"gateway_user_service_endpoint"`
 }
 
 func UserServiceGateway(p GatewayParams) error {
-	return RegisterUserServiceHandlerFromEndpoint(context.TODO(), p.Mux, p.Endpoint, p.Opts)
-}
-
-var GatewayInsecureDialModule = fx.Provide(DialInsecure)
-
-type DialInsecureResult struct {
-	fx.Out
-
-	Op grpc.DialOption `group:"gateway_user_service_dial_options"`
-}
-
-func DialInsecure() DialInsecureResult {
-	return DialInsecureResult{Op: grpc.WithInsecure()}
+	return RegisterUserServiceHandlerFromEndpoint(context.TODO(), p.Mux, p.Endpoint, []grpc.DialOption{grpc.WithInsecure()})
 }
 
 var SwaggerModule = fx.Invoke(RegisterProfileSwagger)

@@ -1,4 +1,4 @@
-package gateway
+package server
 
 import (
 	"net/http"
@@ -8,7 +8,7 @@ import (
 	"go.uber.org/fx"
 )
 
-var MuxModule = fx.Options(
+var GatewayMuxModule = fx.Options(
 	fx.Provide(runtime.NewServeMux, NewServeMuxMarshallerOption),
 	fx.Invoke(RegisterProtoMux),
 )
