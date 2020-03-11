@@ -1,26 +1,24 @@
 # Project params
 PROJECT=profile
 
+all: clean build run
 
-.PHONY: all
-all: clean generate build run
-
-.PHONY: run
 run:
 	@$(CURDIR)/bin/$(PROJECT)
 
-.PHONY: build
 build: 
 	@go build -o $(CURDIR)/bin/$(PROJECT) $(CURDIR)/cmd/$(PROJECT)
 
-.PHONY: generate
-generate:
-	@go generate ./...
-
-.PHONY: test
 test:
 	@go test ./internal/$(PROJECT) -count=1 -cover
 
-.PHONY: clean
+lint:
+	@go vet ./...
+
+generate:
+	@go generate ./...
+
 clean:
 	@rm -f $(CURDIR)/bin/$(PROJECT)
+
+.PHONY: all run build generate test lint clean
