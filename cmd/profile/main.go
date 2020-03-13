@@ -3,7 +3,6 @@ package main
 import (
 	"go.uber.org/fx"
 
-	"github.com/reviz0r/golang-layout/configs"
 	"github.com/reviz0r/golang-layout/pkg/config"
 	"github.com/reviz0r/golang-layout/pkg/db"
 	"github.com/reviz0r/golang-layout/pkg/logger"
@@ -18,7 +17,7 @@ func main() {
 		fx.NopLogger,
 
 		config.Module,
-		configs.Module,
+		config.DefaultValues,
 		logger.Module,
 
 		db.Module,

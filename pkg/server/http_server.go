@@ -31,7 +31,9 @@ func NewServeMux(lc fx.Lifecycle, config *viper.Viper, logger *logrus.Entry) *ht
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			return s.Shutdown(ctx)
+			err := s.Shutdown(ctx)
+			logger.Debug("http server is shutdown")
+			return err
 		},
 	})
 

@@ -1,8 +1,9 @@
 package logger
 
 import (
+	"context"
 	"errors"
-	"io"
+	"os"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -12,15 +13,8 @@ import (
 // Module register logger in DI container
 var Module = fx.Provide(NewLogger, logrus.NewEntry)
 
-// LoggerParams .
-type LoggerParams struct {
-	fx.In
-
-	Output io.Writer `name:"logger_output" optional:"true"`
-}
-
 // NewLogger gives new predefined logger
-func NewLogger(config *viper.Viper, p LoggerParams) (*logrus.Logger, error) {
+func NewLogger(lc fx.Lifecycle, config *viper.Viper) (*logrus.Logger, error) {
 	logger := logrus.New()
 
 	if logFormatter := config.GetString("logger.formatter"); logFormatter != "" {
@@ -47,9 +41,27 @@ func NewLogger(config *viper.Viper, p LoggerParams) (*logrus.Logger, error) {
 		logger.SetNoLock()
 	}
 
-	if p.Output != nil {
-		logger.SetOutput(p.Output)
+	var outputFile *os.File
+	if fileName := config.GetString("logger.output_file"); fileName != "" {
+		var err error
+
+		outputFile, err = os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		if err != nil {
+			return nil, err
+		}
+
+		logger.SetOutput(outputFile)
 	}
+
+	lc.Append(fx.Hook{
+		OnStop: func(ctx context.Context) error {
+			if outputFile != nil {
+				return outputFile.Close()
+			}
+
+			return nil
+		},
+	})
 
 	return logger, nil
 }

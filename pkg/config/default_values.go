@@ -1,16 +1,18 @@
-package configs
+package config
 
 import (
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 )
 
-var Module = fx.Invoke(NewConfig)
+// DefaultValues set dafault config values in DI container
+var DefaultValues = fx.Invoke(SetConfigDefaults)
 
-func NewConfig(config *viper.Viper) {
+// SetConfigDefaults define default values for app config
+func SetConfigDefaults(config *viper.Viper) {
 	config.SetDefault("database.dsn", "host=localhost user=postgres sslmode=disable")
 	config.SetDefault("grpc.network", "tcp")
 	config.SetDefault("grpc.address", ":50051")
 	config.SetDefault("http.network", "tcp")
-	config.SetDefault("http.address", ":8081")
+	config.SetDefault("http.address", ":80")
 }

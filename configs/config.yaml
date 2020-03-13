@@ -6,6 +6,10 @@ logger:
   formatter: text
   level: trace
   log_grpc_payload: yes
+  # output_file: golang-layout.log
+
+http:
+  address: :8081
 
 gateway:
   profile_service_endpoint: localhost:50051
