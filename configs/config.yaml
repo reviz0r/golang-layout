@@ -7,12 +7,6 @@ logger:
   level: trace
   log_grpc_payload: yes
 
-grpc:
-  address: :50051
-
-http:
-  address: :8081
-
 gateway:
   profile_service_endpoint: localhost:50051
 
