@@ -1,0 +1,20 @@
+database:
+  dsn: host=localhost user=postgres sslmode=disable dbname=golang-layout
+  ping_on_start: yes
+
+logger:
+  formatter: text
+  level: trace
+  log_grpc_payload: yes
+
+grpc:
+  address: :50051
+
+http:
+  address: :8081
+
+gateway:
+  profile_service_endpoint: localhost:50051
+
+  marshaler:
+    emit_defaults: yes

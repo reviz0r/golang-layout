@@ -6,32 +6,28 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"go.uber.org/fx"
 )
 
 var HTTPModule = fx.Provide(NewServeMux)
 
-type ServeMuxParams struct {
-	fx.In
-
-	Network string `name:"http_network"`
-	Address string `name:"http_address"`
-}
-
-func NewServeMux(lc fx.Lifecycle, p ServeMuxParams) *http.ServeMux {
+func NewServeMux(lc fx.Lifecycle, config *viper.Viper, logger *logrus.Entry) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	s := http.Server{Addr: p.Address, Handler: mux}
+	address := config.GetString("http.address")
+	s := http.Server{Addr: address, Handler: mux}
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			lis, err := net.Listen(p.Network, p.Address)
+			lis, err := net.Listen(config.GetString("http.network"), address)
 			if err != nil {
-				return fmt.Errorf("cannot listen port %s %v", p.Address, err)
+				return fmt.Errorf("cannot listen port %s %v", address, err)
 			}
 
 			go s.Serve(lis)
-
+			logger.Debugf("http server started on port %s", address)
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {

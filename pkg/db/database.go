@@ -4,53 +4,41 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	// import postgresql driver
 	_ "github.com/lib/pq"
+	"github.com/spf13/viper"
 	"go.uber.org/fx"
 )
 
 // Module register database connection in DI container
 var Module = fx.Provide(NewDatabase)
 
-// DatabaseParams .
-type DatabaseParams struct {
-	fx.In
-
-	DSN             string        `name:"database_dsn"`
-	ConnMaxLifetime time.Duration `name:"database_conn_max_lifetime" optional:"true"`
-	MaxIdleConns    int           `name:"database_max_idle_conns" optional:"true"`
-	MaxOpenConns    int           `name:"database_max_open_conns" optional:"true"`
-
-	PingOnStart bool `name:"database_ping_on_start" optional:"true"`
-}
-
 // NewDatabase gives new predefined database connection
-func NewDatabase(lc fx.Lifecycle, p DatabaseParams) (*sql.DB, error) {
-	dbconn, err := sql.Open("postgres", p.DSN)
+func NewDatabase(lc fx.Lifecycle, config *viper.Viper) (*sql.DB, error) {
+	dbconn, err := sql.Open("postgres", config.GetString("database.dsn"))
 	if err != nil {
 		return nil, fmt.Errorf("cannot open connection to database: %v", err)
 	}
 
-	if p.ConnMaxLifetime != 0 {
-		dbconn.SetConnMaxLifetime(p.ConnMaxLifetime)
+	if connMaxLifetime := config.GetDuration("database.conn_max_lifetime"); connMaxLifetime != 0 {
+		dbconn.SetConnMaxLifetime(connMaxLifetime)
 	}
 
-	if p.MaxIdleConns != 0 {
-		dbconn.SetMaxIdleConns(p.MaxIdleConns)
+	if maxIdleConns := config.GetInt("database.max_idle_conns"); maxIdleConns != 0 {
+		dbconn.SetMaxIdleConns(maxIdleConns)
 	}
 
-	if p.MaxOpenConns != 0 {
-		dbconn.SetMaxOpenConns(p.MaxOpenConns)
+	if maxOpenConns := config.GetInt("database.max_open_conns"); maxOpenConns != 0 {
+		dbconn.SetMaxOpenConns(maxOpenConns)
 	}
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			if p.PingOnStart {
+			if config.GetBool("database.ping_on_start") {
 				err = dbconn.PingContext(ctx)
 				if err != nil {
-					return fmt.Errorf("cannot ping database connection: %v", err)
+					return fmt.Errorf("database: cannot ping connection: %v", err)
 				}
 			}
 			return nil
@@ -59,7 +47,7 @@ func NewDatabase(lc fx.Lifecycle, p DatabaseParams) (*sql.DB, error) {
 		OnStop: func(ctx context.Context) error {
 			err := dbconn.Close()
 			if err != nil {
-				return fmt.Errorf("cannot close database connection: %v", err)
+				return fmt.Errorf("database: cannot close connection: %v", err)
 			}
 			return nil
 		},

@@ -14,23 +14,17 @@ import (
 
 var InterceptorsModule = fx.Provide(NewStreamServerInterceptors, NewUnaryServerInterceptors)
 
-type ServerInterceptorParams struct {
-	fx.In
-
-	Logger                *logrus.Entry
-	PayloadLoggingDecider grpcLogging.ServerPayloadLoggingDecider
-}
-
 type ServerInterceptorResult struct {
 	fx.Out
 
 	Option grpc.ServerOption `group:"grpc_server_options"`
 }
 
-func NewStreamServerInterceptors(p ServerInterceptorParams) ServerInterceptorResult {
+func NewStreamServerInterceptors(logger *logrus.Entry,
+	PayloadLoggingDecider grpcLogging.ServerPayloadLoggingDecider) ServerInterceptorResult {
 	o := grpc.StreamInterceptor(grpcMiddleware.ChainStreamServer(
-		grpcLogrus.StreamServerInterceptor(p.Logger),
-		grpcLogrus.PayloadStreamServerInterceptor(p.Logger, p.PayloadLoggingDecider),
+		grpcLogrus.StreamServerInterceptor(logger),
+		grpcLogrus.PayloadStreamServerInterceptor(logger, PayloadLoggingDecider),
 		grpcRecovery.StreamServerInterceptor(),
 		grpcValidator.StreamServerInterceptor(),
 	))
@@ -38,10 +32,11 @@ func NewStreamServerInterceptors(p ServerInterceptorParams) ServerInterceptorRes
 	return ServerInterceptorResult{Option: o}
 }
 
-func NewUnaryServerInterceptors(p ServerInterceptorParams) ServerInterceptorResult {
+func NewUnaryServerInterceptors(logger *logrus.Entry,
+	PayloadLoggingDecider grpcLogging.ServerPayloadLoggingDecider) ServerInterceptorResult {
 	o := grpc.UnaryInterceptor(grpcMiddleware.ChainUnaryServer(
-		grpcLogrus.UnaryServerInterceptor(p.Logger),
-		grpcLogrus.PayloadUnaryServerInterceptor(p.Logger, p.PayloadLoggingDecider),
+		grpcLogrus.UnaryServerInterceptor(logger),
+		grpcLogrus.PayloadUnaryServerInterceptor(logger, PayloadLoggingDecider),
 		grpcRecovery.UnaryServerInterceptor(),
 		grpcValidator.UnaryServerInterceptor(),
 	))

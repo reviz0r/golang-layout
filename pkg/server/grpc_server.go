@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
 )
@@ -19,25 +20,23 @@ type GrpcServerParams struct {
 
 	Logger *logrus.Entry
 
-	Network string `name:"grpc_network"`
-	Address string `name:"grpc_address"`
-
 	ServerOptions []grpc.ServerOption `group:"grpc_server_options"`
 }
 
 // NewGrpcServer gives new predefined grpc server
-func NewGrpcServer(lc fx.Lifecycle, p GrpcServerParams) *grpc.Server {
+func NewGrpcServer(lc fx.Lifecycle, config *viper.Viper, p GrpcServerParams) *grpc.Server {
 	s := grpc.NewServer(p.ServerOptions...)
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
-			lis, err := net.Listen(p.Network, p.Address)
+			address := config.GetString("grpc.address")
+			lis, err := net.Listen(config.GetString("grpc.network"), address)
 			if err != nil {
-				return fmt.Errorf("cannot listen port %s %v", p.Address, err)
+				return fmt.Errorf("cannot listen port %s %v", address, err)
 			}
 
 			go s.Serve(lis)
-			p.Logger.Debugf("grpc server started on port %s", p.Address)
+			p.Logger.Debugf("grpc server started on port %s", address)
 			return nil
 		},
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/spf13/viper"
 	"go.uber.org/fx"
 )
 
@@ -16,19 +17,15 @@ var GatewayMuxModule = fx.Options(
 type ServeMuxMarshallerParams struct {
 	fx.In
 
-	EnumsAsInts  bool               `name:"gateway_marshaller_enums_as_ints" optional:"true"`
-	EmitDefaults bool               `name:"gateway_marshaller_emit_defaults" optional:"true"`
-	Indent       string             `name:"gateway_marshaller_indent" optional:"true"`
-	OrigName     bool               `name:"gateway_marshaller_orig_name" optional:"true"`
-	AnyResolver  jsonpb.AnyResolver `name:"gateway_marshaller_any_resolver" optional:"true"`
+	AnyResolver jsonpb.AnyResolver `name:"gateway_marshaller_any_resolver" optional:"true"`
 }
 
-func NewServeMuxMarshallerOption(p ServeMuxMarshallerParams) runtime.ServeMuxOption {
+func NewServeMuxMarshallerOption(p ServeMuxMarshallerParams, config *viper.Viper) runtime.ServeMuxOption {
 	marshaller := &runtime.JSONPb{
-		EnumsAsInts:  p.EnumsAsInts,
-		EmitDefaults: p.EmitDefaults,
-		Indent:       p.Indent,
-		OrigName:     p.OrigName,
+		EnumsAsInts:  config.GetBool("gateway.marshaler.enums_as_ints"),
+		EmitDefaults: config.GetBool("gateway.marshaler.emit_defaults"),
+		Indent:       config.GetString("gateway.marshaler.indent"),
+		OrigName:     config.GetBool("gateway.marshaler.orig_name"),
 		AnyResolver:  p.AnyResolver,
 	}
 

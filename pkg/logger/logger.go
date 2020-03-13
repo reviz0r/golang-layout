@@ -1,10 +1,11 @@
-package log
+package logger
 
 import (
 	"errors"
 	"io"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"go.uber.org/fx"
 )
 
@@ -15,18 +16,15 @@ var Module = fx.Provide(NewLogger, logrus.NewEntry)
 type LoggerParams struct {
 	fx.In
 
-	Formatter string    `name:"log_formatter" optional:"true"`
-	Level     string    `name:"log_level" optional:"true"`
-	NoLock    bool      `name:"log_no_lock" optional:"true"`
-	Output    io.Writer `name:"log_output" optional:"true"`
+	Output io.Writer `name:"logger_output" optional:"true"`
 }
 
 // NewLogger gives new predefined logger
-func NewLogger(p LoggerParams) (*logrus.Logger, error) {
+func NewLogger(config *viper.Viper, p LoggerParams) (*logrus.Logger, error) {
 	logger := logrus.New()
 
-	if p.Formatter != "" {
-		switch p.Formatter {
+	if logFormatter := config.GetString("logger.formatter"); logFormatter != "" {
+		switch logFormatter {
 		case "text":
 			logger.SetFormatter(new(logrus.TextFormatter))
 		case "json":
@@ -36,8 +34,8 @@ func NewLogger(p LoggerParams) (*logrus.Logger, error) {
 		}
 	}
 
-	if p.Level != "" {
-		level, err := logrus.ParseLevel(p.Level)
+	if logLevel := config.GetString("logger.level"); logLevel != "" {
+		level, err := logrus.ParseLevel(logLevel)
 		if err != nil {
 			return nil, err
 		}
@@ -45,7 +43,7 @@ func NewLogger(p LoggerParams) (*logrus.Logger, error) {
 		logger.SetLevel(level)
 	}
 
-	if p.NoLock {
+	if config.GetBool("logger.no_lock") {
 		logger.SetNoLock()
 	}
 

@@ -3,9 +3,10 @@ package main
 import (
 	"go.uber.org/fx"
 
+	"github.com/reviz0r/golang-layout/configs"
 	"github.com/reviz0r/golang-layout/pkg/config"
 	"github.com/reviz0r/golang-layout/pkg/db"
-	"github.com/reviz0r/golang-layout/pkg/log"
+	"github.com/reviz0r/golang-layout/pkg/logger"
 	"github.com/reviz0r/golang-layout/pkg/server"
 
 	profileInternal "github.com/reviz0r/golang-layout/internal/profile"
@@ -17,7 +18,9 @@ func main() {
 		fx.NopLogger,
 
 		config.Module,
-		log.Module,
+		configs.Module,
+		logger.Module,
+
 		db.Module,
 
 		// grpc modules
