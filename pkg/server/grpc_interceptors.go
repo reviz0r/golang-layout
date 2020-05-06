@@ -10,6 +10,7 @@ import (
 	grpcLogrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpcRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpcValidator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
+	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 )
 
 var InterceptorsModule = fx.Provide(NewStreamServerInterceptors, NewUnaryServerInterceptors)
@@ -25,6 +26,7 @@ func NewStreamServerInterceptors(logger *logrus.Entry,
 	o := grpc.StreamInterceptor(grpcMiddleware.ChainStreamServer(
 		grpcLogrus.StreamServerInterceptor(logger),
 		grpcLogrus.PayloadStreamServerInterceptor(logger, PayloadLoggingDecider),
+		grpcPrometheus.StreamServerInterceptor,
 		grpcRecovery.StreamServerInterceptor(),
 		grpcValidator.StreamServerInterceptor(),
 	))
@@ -37,6 +39,7 @@ func NewUnaryServerInterceptors(logger *logrus.Entry,
 	o := grpc.UnaryInterceptor(grpcMiddleware.ChainUnaryServer(
 		grpcLogrus.UnaryServerInterceptor(logger),
 		grpcLogrus.PayloadUnaryServerInterceptor(logger, PayloadLoggingDecider),
+		grpcPrometheus.UnaryServerInterceptor,
 		grpcRecovery.UnaryServerInterceptor(),
 		grpcValidator.UnaryServerInterceptor(),
 	))

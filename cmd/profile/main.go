@@ -26,10 +26,12 @@ func main() {
 		server.Module,
 		server.InterceptorsModule,
 		server.GrpcLoggingPayloadModule,
+		server.PrometheusMetrics,
 
 		// gateway modules
 		server.GatewayMuxModule,
 		server.HTTPModule,
+		server.PrometheusMetricsHandler,
 
 		// logic modules
 		profileInternal.Module,
