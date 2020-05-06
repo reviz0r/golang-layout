@@ -10,9 +10,20 @@ import (
 )
 
 var GatewayMuxModule = fx.Options(
-	fx.Provide(runtime.NewServeMux, NewServeMuxMarshallerOption),
+	fx.Provide(NewServeMuxMarshallerOption),
+	fx.Provide(NewGatewayServeMux),
 	fx.Invoke(RegisterProtoMux),
 )
+
+type GatewayServeMuxParams struct {
+	fx.In
+
+	Options []runtime.ServeMuxOption `group:"gateway_server_mux_options"`
+}
+
+func NewGatewayServeMux(params GatewayServeMuxParams) *runtime.ServeMux {
+	return runtime.NewServeMux(params.Options...)
+}
 
 type ServeMuxMarshallerParams struct {
 	fx.In
@@ -20,7 +31,13 @@ type ServeMuxMarshallerParams struct {
 	AnyResolver jsonpb.AnyResolver `name:"gateway_marshaller_any_resolver" optional:"true"`
 }
 
-func NewServeMuxMarshallerOption(p ServeMuxMarshallerParams, config *viper.Viper) runtime.ServeMuxOption {
+type ServeMuxMarshallerResult struct {
+	fx.Out
+
+	Option runtime.ServeMuxOption `group:"gateway_server_mux_options"`
+}
+
+func NewServeMuxMarshallerOption(p ServeMuxMarshallerParams, config *viper.Viper) ServeMuxMarshallerResult {
 	marshaller := &runtime.JSONPb{
 		EnumsAsInts:  config.GetBool("gateway.marshaler.enums_as_ints"),
 		EmitDefaults: config.GetBool("gateway.marshaler.emit_defaults"),
@@ -29,7 +46,7 @@ func NewServeMuxMarshallerOption(p ServeMuxMarshallerParams, config *viper.Viper
 		AnyResolver:  p.AnyResolver,
 	}
 
-	return runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaller)
+	return ServeMuxMarshallerResult{Option: runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaller)}
 }
 
 func RegisterProtoMux(mux *http.ServeMux, gatewayMux *runtime.ServeMux) {
