@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/opentracing/opentracing-go"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/fx"
 	"google.golang.org/grpc"
@@ -11,6 +12,7 @@ import (
 	grpcRecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	grpcValidator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpcPrometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	grpcOpenTracing "github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
 )
 
 var InterceptorsModule = fx.Provide(NewStreamServerInterceptors, NewUnaryServerInterceptors)
@@ -21,12 +23,13 @@ type ServerInterceptorResult struct {
 	Option grpc.ServerOption `group:"grpc_server_options"`
 }
 
-func NewStreamServerInterceptors(logger *logrus.Entry,
+func NewStreamServerInterceptors(logger *logrus.Entry, tracer opentracing.Tracer,
 	PayloadLoggingDecider grpcLogging.ServerPayloadLoggingDecider) ServerInterceptorResult {
 	o := grpc.StreamInterceptor(grpcMiddleware.ChainStreamServer(
 		grpcLogrus.StreamServerInterceptor(logger),
 		grpcLogrus.PayloadStreamServerInterceptor(logger, PayloadLoggingDecider),
 		grpcPrometheus.StreamServerInterceptor,
+		grpcOpenTracing.OpenTracingStreamServerInterceptor(tracer),
 		grpcRecovery.StreamServerInterceptor(),
 		grpcValidator.StreamServerInterceptor(),
 	))
@@ -34,12 +37,13 @@ func NewStreamServerInterceptors(logger *logrus.Entry,
 	return ServerInterceptorResult{Option: o}
 }
 
-func NewUnaryServerInterceptors(logger *logrus.Entry,
+func NewUnaryServerInterceptors(logger *logrus.Entry, tracer opentracing.Tracer,
 	PayloadLoggingDecider grpcLogging.ServerPayloadLoggingDecider) ServerInterceptorResult {
 	o := grpc.UnaryInterceptor(grpcMiddleware.ChainUnaryServer(
 		grpcLogrus.UnaryServerInterceptor(logger),
 		grpcLogrus.PayloadUnaryServerInterceptor(logger, PayloadLoggingDecider),
 		grpcPrometheus.UnaryServerInterceptor,
+		grpcOpenTracing.OpenTracingServerInterceptor(tracer),
 		grpcRecovery.UnaryServerInterceptor(),
 		grpcValidator.UnaryServerInterceptor(),
 	))

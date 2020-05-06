@@ -7,6 +7,7 @@ import (
 	"github.com/reviz0r/golang-layout/pkg/db"
 	"github.com/reviz0r/golang-layout/pkg/logger"
 	"github.com/reviz0r/golang-layout/pkg/server"
+	"github.com/reviz0r/golang-layout/pkg/tracer"
 
 	profileInternal "github.com/reviz0r/golang-layout/internal/profile"
 	profilePkg "github.com/reviz0r/golang-layout/pkg/profile"
@@ -27,6 +28,7 @@ func main() {
 		server.InterceptorsModule,
 		server.GrpcLoggingPayloadModule,
 		server.PrometheusMetrics,
+		tracer.Module,
 
 		// gateway modules
 		server.GatewayMuxModule,
