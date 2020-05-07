@@ -1,6 +1,7 @@
 package tracer
 
 import (
+	"github.com/opentracing/basictracer-go/examples/dapperish"
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/fx"
 )
@@ -10,5 +11,5 @@ var Module = fx.Provide(NewTracer)
 
 // NewTracer .
 func NewTracer() opentracing.Tracer {
-	return opentracing.NoopTracer{}
+	return dapperish.NewTracer("golang-layout")
 }
