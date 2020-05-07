@@ -18,13 +18,11 @@ var Module = fx.Provide(NewGrpcServer)
 type GrpcServerParams struct {
 	fx.In
 
-	Logger *logrus.Entry
-
 	ServerOptions []grpc.ServerOption `group:"grpc_server_options"`
 }
 
 // NewGrpcServer gives new predefined grpc server
-func NewGrpcServer(lc fx.Lifecycle, config *viper.Viper, p GrpcServerParams) *grpc.Server {
+func NewGrpcServer(lc fx.Lifecycle, config *viper.Viper, logger *logrus.Entry, p GrpcServerParams) *grpc.Server {
 	s := grpc.NewServer(p.ServerOptions...)
 
 	lc.Append(fx.Hook{
@@ -36,13 +34,13 @@ func NewGrpcServer(lc fx.Lifecycle, config *viper.Viper, p GrpcServerParams) *gr
 			}
 
 			go s.Serve(lis)
-			p.Logger.Debugf("grpc server started on port %s", address)
+			logger.Debugf("grpc server started on port %s", address)
 			return nil
 		},
 
 		OnStop: func(ctx context.Context) error {
 			s.GracefulStop()
-			p.Logger.Debug("grpc server is shutdown")
+			logger.Debug("grpc server is shutdown")
 			return nil
 		},
 	})
