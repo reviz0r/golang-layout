@@ -6,6 +6,8 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus/ctxlogrus"
+	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
 	"github.com/volatiletech/sqlboiler/queries/qm"
 	"go.uber.org/fx"
@@ -45,6 +47,12 @@ func (s *UserService) Create(ctx context.Context, in *profile.CreateRequest) (*p
 
 // ReadAll .
 func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (*profile.ReadAllResponse, error) {
+	// add fields to request logger
+	ctxlogrus.AddFields(ctx, logrus.Fields{"my.custom.field": "some_value"})
+
+	// Extract a single request-scoped logrus.Logger and log messages.
+	l := ctxlogrus.Extract(ctx)
+
 	var offset = in.GetOffset()
 	var limit = in.GetLimit()
 	if in.GetLimit() == 0 {
@@ -54,6 +62,7 @@ func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (
 		limit = 1000
 	}
 
+	l.Trace("selecting users")
 	users, err := models.Users(
 		qm.Select(in.GetFields().GetPaths()...),
 		qm.Limit(int(limit)),
@@ -63,16 +72,19 @@ func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (
 		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %s", err.Error())
 	}
 
+	l.Trace("selecting total count")
 	total, err := models.Users().Count(ctx, s.DB)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "UserService.ReadAll: %s", err.Error())
 	}
 
+	l.Trace("marshal users to protobuf")
 	pbUsers := make([]*profile.User, len(users))
 	for i, user := range users {
 		pbUsers[i] = userToProto(user)
 	}
 
+	l.Trace("return response")
 	return &profile.ReadAllResponse{Users: pbUsers, Limit: limit, Offset: offset, Total: int32(total)}, nil
 }
 
