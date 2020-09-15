@@ -7,6 +7,8 @@ import (
 
 	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus/ctxlogrus"
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/log"
 	"github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/boil"
 	"github.com/volatiletech/sqlboiler/queries/qm"
@@ -47,6 +49,16 @@ func (s *UserService) Create(ctx context.Context, in *profile.CreateRequest) (*p
 
 // ReadAll .
 func (s *UserService) ReadAll(ctx context.Context, in *profile.ReadAllRequest) (*profile.ReadAllResponse, error) {
+	// add fields to span
+	span := opentracing.SpanFromContext(ctx).
+		// SetOperationName("operation ReadAll"). // it's not needed - grpc already set operation name
+		SetTag("blablabla", 123).      // I don't see it in span log
+		SetBaggageItem("ping", "pong") // this works fine
+
+	// just add some logging to tracer
+	span.LogFields(log.String("field", "some_value"), log.Int("some_int", 1))
+	span.LogKV("field_1", "value_1", "field_2", "value_2")
+
 	// add fields to request logger
 	ctxlogrus.AddFields(ctx, logrus.Fields{"my.custom.field": "some_value"})
 
