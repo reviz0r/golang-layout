@@ -1,3 +1,7 @@
+no-tests = true
+no-hooks = true
+no-driver-templates = true
+
 [psql]
   host      = "localhost"
   port      = 5432
@@ -6,4 +10,4 @@
   user      = "postgres"
   pass      = "postgres"
   schema    = "public"
-  blacklist = ["goose_db_version"]
+  blacklist = ["goose_db_version", "schema_migrations"]
