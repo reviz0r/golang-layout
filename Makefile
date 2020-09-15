@@ -21,4 +21,10 @@ generate:
 clean:
 	@rm -f $(CURDIR)/bin/$(PROJECT)
 
-.PHONY: all run build generate test lint clean
+migrate-up:
+	@migrate -source file://./migrations -database 'postgres://postgres@localhost:5432/golang-layout?sslmode=disable' up
+
+migrate-down:
+	@migrate -source file://./migrations -database 'postgres://postgres@localhost:5432/golang-layout?sslmode=disable' down
+
+.PHONY: all run build generate test lint clean migrate-up migrate-down
